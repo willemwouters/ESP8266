@@ -1,6 +1,9 @@
 #ifndef __IP_SERVER_H
 #define __IP_SERVER_H
 
+#include "espconn.h"
+
+#include "ipconfig.h"
 
 #define at_linkMax 5
 
@@ -20,7 +23,10 @@ typedef struct
 	struct espconn *pCon;
 } espServerConnectionType;
 
-void SetupServer(char *pPara);
+void SetStateServer(BOOL enable);
+
+BOOL IsServerRunning();
+void SetupServer(int enable, int port, int type);
 
 
 // static void at_tcpserver_discon_cb(void *arg);

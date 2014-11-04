@@ -1,15 +1,3 @@
-/*
-Cgi/template routines for the /wifi url.
-*/
-
-/*
- * ----------------------------------------------------------------------------
- * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
- * ----------------------------------------------------------------------------
- */
 
 
 #include <string.h>
@@ -100,6 +88,9 @@ static void ICACHE_FLASH_ATTR wifiStartScan() {
 	wifi_station_scan(NULL, wifiScanDoneCb);
 }
 
+
+
+
 //This CGI is called from the bit of AJAX-code in wifi.tpl. It will initiate a
 //scan for access points and if available will return the result of an earlier scan.
 //The result is embedded in a bit of JSON parsed by the javascript in wifi.tpl.
@@ -133,6 +124,7 @@ int ICACHE_FLASH_ATTR cgiWiFiScan(HttpdConnData *connData) {
 
 //Temp store for new ap info.
 static struct station_config stconf;
+static struct softap_config apconf;
 
 //This routine is ran some time after a connection attempt to an access point. If
 //the connect succeeds, this gets the module in STA-only mode.
@@ -172,6 +164,39 @@ static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 }
 
 
+
+
+
+//This cgi uses the routines above to connect to a specific access point with the
+//given ESSID using the given password.
+int ICACHE_FLASH_ATTR cgiWiFiApSave(HttpdConnData *connData) {
+	char ssid[128];
+	char password[128];
+	//static ETSTimer reassTimer;
+	
+	if (connData->conn==NULL) {
+		//Connection aborted. Clean up.
+		return HTTPD_CGI_DONE;
+	}
+	
+	wifi_softap_get_config(&apconf);
+
+	httpdFindArg(connData->postBuff, "ssid", ssid, sizeof(ssid));
+	httpdFindArg(connData->postBuff, "password", password, sizeof(password));
+
+	os_strncpy((char*)apconf.ssid, ssid, 32);
+	os_strncpy((char*)apconf.password, password, 64);
+
+	wifi_softap_set_config(&apconf);
+	//Schedule disconnect/connect
+	// os_timer_disarm(&reassTimer);
+	// os_timer_setfn(&reassTimer, reassTimerCb, NULL);
+	// os_timer_arm(&reassTimer, 1000, 0);
+	httpdRedirect(connData, "/wifi/wifi.tpl");
+	return HTTPD_CGI_DONE;
+}
+
+
 //This cgi uses the routines above to connect to a specific access point with the
 //given ESSID using the given password.
 int ICACHE_FLASH_ATTR cgiWiFiConnect(HttpdConnData *connData) {
@@ -194,42 +219,6 @@ int ICACHE_FLASH_ATTR cgiWiFiConnect(HttpdConnData *connData) {
 	os_timer_disarm(&reassTimer);
 	os_timer_setfn(&reassTimer, reassTimerCb, NULL);
 	os_timer_arm(&reassTimer, 1000, 0);
-#if 0
-	os_timer_arm(&reassTimer, 1000, 0);
-
 	httpdRedirect(connData, "connecting.html");
-#else
-	httpdRedirect(connData, "/wifi");
-#endif
 	return HTTPD_CGI_DONE;
 }
-
-//Template code for the WLAN page.
-void ICACHE_FLASH_ATTR tplWlan(HttpdConnData *connData, char *token, void **arg) {
-	char buff[1024];
-	int x;
-	static struct station_config stconf;
-	if (token==NULL) return;
-	wifi_station_get_config(&stconf);
-
-	
-
-	os_strcpy(buff, "Unknown");
-	if (os_strcmp(token, "WiFiMode")==0) {
-		x=wifi_get_opmode();
-		if (x==1) os_strcpy(buff, "Client");
-		if (x==2) os_strcpy(buff, "SoftAP");
-		if (x==3) os_strcpy(buff, "STA+AP");
-		TcpSend(TCP, "192.168.178.1", 80, "GET / HTTP/1.0\r\n\r\n");
-
-		SetupServer("1,333");
-
-	} else if (os_strcmp(token, "currSsid")==0) {
-		os_strcpy(buff, (char*)stconf.ssid);
-	} else if (os_strcmp(token, "WiFiPasswd")==0) {
-		os_strcpy(buff, (char*)stconf.password);
-	}
-	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));
-}
-
-

@@ -1,22 +1,15 @@
-
-
-/*
- * ----------------------------------------------------------------------------
- * "THE BEER-WARE LICENSE" (Revision 42):
- * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
- * this notice you can do whatever you want with this stuff. If we meet some day, 
- * and you think this stuff is worth it, you can buy me a beer in return. 
- * ----------------------------------------------------------------------------
- */
-
-
 #include "espmissingincludes.h"
 #include "ets_sys.h"
 #include "osapi.h"
 #include "httpd/httpd.h"
 #include "io/io.h"
 #include "httpd/httpdespfs.h"
-#include "cgi-src/cgiwifi.h"
+#include "cgi-src/wifi/wifi_cgi.h"
+#include "cgi-src/wifi/wifi_tpl.h"
+#include "cgi-src/wifi/status_tpl.h"
+#include "cgi-src/tcp/tcprequest_cgi.h"
+#include "cgi-src/tcp/serverconfig_tpl.h"
+#include "cgi-src/tcp/serverstatus_tpl.h"
 #include "tty/stdout.h"
 
 HttpdBuiltInUrl builtInUrls[]={
@@ -24,9 +17,21 @@ HttpdBuiltInUrl builtInUrls[]={
 	//Routines to make the /wifi URL and everything beneath it work.
 	{"/wifi", cgiRedirect, "/wifi/wifi.tpl"},
 	{"/wifi/", cgiRedirect, "/wifi/wifi.tpl"},
-	{"/wifi/wifiscan.cgi", cgiWiFiScan, NULL},
 	{"/wifi/wifi.tpl", cgiEspFsTemplate, tplWlan},
-	{"/wifi/connect.cgi", cgiWiFiConnect},
+	{"/wifi/status.tpl", cgiEspFsTemplate, tplStatus},
+	{"/wifi/WiFiScan.cgi", cgiWiFiScan, NULL},
+	{"/wifi/WiFiConnect.cgi", cgiWiFiConnect},
+	{"/wifi/WiFiApSave.cgi", cgiWiFiApSave},
+
+	{"/tcp/request.tpl", cgiEspFsTemplate, tplTcpRequest},
+	{"/tcp/serverconfig.tpl", cgiEspFsTemplate, tplTcpServerConfig},
+	{"/tcp/TcpServerSave.cgi", cgiTcpServerSave},
+	{"/tcp/TcpServerEnable.cgi", cgiTcpServerEnable},
+	
+	{"/tcp/serverstatus.tpl", cgiEspFsTemplate, tplTcpServerStatus},
+	{"/tcp/TcpResponse.cgi", cgiTcpResponse, NULL},
+	{"/tcp/TcpRequest.cgi", cgiTcpRequest},
+
 
 	{"*", cgiEspFsHook, NULL}, //Catch-all cgi function for the filesystem
 	{NULL, NULL, NULL}
@@ -39,3 +44,4 @@ void user_init(void) {
 	httpdInit(builtInUrls, 80);
 	os_printf("\nReady\n");
 }
+

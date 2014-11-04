@@ -28,7 +28,8 @@ ESPPORT		?= /dev/ttyACM0
 TARGET		= httpd
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= driver user user/ip user/cgi-src user/fs user/httpd user/io user/tty  #user/wifi
+MODULES		= driver user user/ip user/cgi-src user/cgi-src/tcp user/cgi-src/wifi \
+				user/fs user/httpd user/io user/tty user/wifi us
 EXTRA_INCDIR	= include \
 		. \
 		lib/heatshrink/ \

@@ -12,5 +12,46 @@ body {
 	border: 2px solid #000000;
 	width: 800px;
 	margin: 0 auto;
-	padding: 20px
+	padding: 10px;
+	display:block;
+	position:relative;
+	float:left;
+}
+
+#menu ul li {
+	list-style-type: none;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+a:visited {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:active {
+    text-decoration: underline;
+}
+
+#menu ul li a {
+	text-decoration: none;
+	color:black;
+}
+
+#menu {
+	background-color: #d0d0FF;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	border: 2px solid #000000;
+	margin: 0 auto;
+	width: 250px;
+	display:block;
+	position:relative;
+	float:left;
 }

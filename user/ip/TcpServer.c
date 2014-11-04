@@ -180,6 +180,7 @@ at_tcpserver_listen(void *arg)
   os_printf("Link\r\n");
 }
 
+
 /**
   * @brief  Udp server receive data callback function.
   * @param  arg: contain the ip link information
@@ -232,6 +233,31 @@ at_udpserver_recv(void *arg, char *pusrdata, unsigned short len)
  // at_backOk;
 }
 
+BOOL IsServerRunning() {
+  return serverEn;
+}
+
+
+
+void ICACHE_FLASH_ATTR SetStateServer(BOOL enable) {
+  int i;
+  if(enable == false) {
+     for(i = 0;i < at_linkMax;i++)
+      {
+        if(pLink[i].linkEn == TRUE)
+        {
+         espconn_disconnect(pLink[i].pCon);
+        }
+      }
+      espconn_disconnect(pUdpServer);
+      espconn_delete(pTcpServer);
+      serverEn = false;
+  } else {
+    espconn_create(pUdpServer);
+    espconn_accept(pTcpServer);
+  }
+}
+
 /**
   * @brief  Setup commad of module as server.
   * @param  id: commad id number
@@ -239,11 +265,9 @@ at_udpserver_recv(void *arg, char *pusrdata, unsigned short len)
   * @retval None
   */
 void ICACHE_FLASH_ATTR
-SetupServer(char *pPara)
+SetupServer(int enable, int port, int type)
 {
-  BOOL serverEnTemp;
-  int32_t port;
-  port = 333;
+
   //char temp[32];
 
   if(at_ipMux == FALSE)
@@ -251,41 +275,21 @@ SetupServer(char *pPara)
    // at_backError;
     return;
   }
-  //pPara++;
-  serverEnTemp = atoi(pPara);
-  //pPara++;
-  if(serverEnTemp == 0)
-  {
-    if(*pPara != '\r')
-    {
-            os_printf("SetupServer error 1\r\n");
 
-     // at_backError;
+  if(enable == 0)
+  {
+    os_printf("SetupServer error 1\r\n");
       return;
-    }
+    
   }
-  else if(serverEnTemp == 1)
-  {
-    if(*pPara == ',')
-    {
-      pPara++;
-      port = atoi(pPara);
-    }
    
-  }
-  else
-  {
-                os_printf("SetupServer error 2\r\n");
-
-    return;
-  }
-  if(serverEnTemp == serverEn)
+  if(enable == serverEn)
   {
     os_printf("ERROR ERROR no change\r\n");
     return;
   }
 
-  if(serverEnTemp)
+  if(enable)
   {
     pTcpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
     if (pTcpServer == NULL)
@@ -294,6 +298,7 @@ SetupServer(char *pPara)
       return;
     }
 
+if(type != 2) {
     pTcpServer->type = ESPCONN_TCP;
     pTcpServer->state = ESPCONN_NONE;
     pTcpServer->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
@@ -301,23 +306,25 @@ SetupServer(char *pPara)
     espconn_regist_connectcb(pTcpServer, at_tcpserver_listen);
     espconn_accept(pTcpServer);
     espconn_regist_time(pTcpServer, server_timeover, 0);
-      os_printf("TcpServer success port: %d\r\n", (int) port);
+    os_printf("TcpServer success port: %d\r\n", (int) port);
+  }
 
-    pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
-    if (pUdpServer == NULL)
-    {
-      os_printf("UdpServer Failure\r\n");
-      return;
-    }
-    pUdpServer->type = ESPCONN_UDP;
-    pUdpServer->state = ESPCONN_NONE;
-    pUdpServer->proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
-    pUdpServer->proto.udp->local_port = port;
-    pUdpServer->reverse = NULL;
-    espconn_regist_recvcb(pUdpServer, at_udpserver_recv);
-    espconn_create(pUdpServer);
-      os_printf("UdpServer success port: %d\r\n",(int)  port);
-
+  if(type != 1) {
+      pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
+      if (pUdpServer == NULL)
+      {
+        os_printf("UdpServer Failure\r\n");
+        return;
+      }
+      pUdpServer->type = ESPCONN_UDP;
+      pUdpServer->state = ESPCONN_NONE;
+      pUdpServer->proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
+      pUdpServer->proto.udp->local_port = port;
+      pUdpServer->reverse = NULL;
+      espconn_regist_recvcb(pUdpServer, at_udpserver_recv);
+      espconn_create(pUdpServer);
+        os_printf("UdpServer success port: %d\r\n",(int)  port);
+  }
 //    if(pLink[0].linkEn)
 //    {
 //      uart0_sendStr("Link is builded\r\n");
@@ -349,7 +356,7 @@ SetupServer(char *pPara)
     os_printf("we must restart\r\n");
     return;
   }
-  serverEn = serverEnTemp;
+  serverEn = enable;
  // at_backOk;
 }
 
