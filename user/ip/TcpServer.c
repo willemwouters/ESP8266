@@ -39,7 +39,7 @@ at_tcpserver_discon_cb(void *arg)
   struct espconn *pespconn = (struct espconn *) arg;
   espServerConnectionType *linkTemp = (espServerConnectionType *) pespconn->reverse;
 
-  os_printf("S conect C: %p\r\n", arg);
+  os_printf("Diconcect C: %p\r\n", arg);
 
   if (pespconn == NULL)
   {
@@ -249,8 +249,8 @@ void ICACHE_FLASH_ATTR SetStateServer(BOOL enable) {
          espconn_disconnect(pLink[i].pCon);
         }
       }
-      espconn_disconnect(pUdpServer);
-      espconn_delete(pTcpServer);
+      espconn_disconnect(pTcpServer);
+      espconn_delete(pUdpServer);
       serverEn = false;
   } else {
     espconn_create(pUdpServer);
@@ -298,57 +298,33 @@ SetupServer(int enable, int port, int type)
       return;
     }
 
-if(type != 2) {
-    pTcpServer->type = ESPCONN_TCP;
-    pTcpServer->state = ESPCONN_NONE;
-    pTcpServer->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
-    pTcpServer->proto.tcp->local_port = port;
-    espconn_regist_connectcb(pTcpServer, at_tcpserver_listen);
-    espconn_accept(pTcpServer);
-    espconn_regist_time(pTcpServer, server_timeover, 0);
-    os_printf("TcpServer success port: %d\r\n", (int) port);
-  }
-
-  if(type != 1) {
-      pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
-      if (pUdpServer == NULL)
-      {
-        os_printf("UdpServer Failure\r\n");
-        return;
+    if(type != 2) {
+        pTcpServer->type = ESPCONN_TCP;
+        pTcpServer->state = ESPCONN_NONE;
+        pTcpServer->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
+        pTcpServer->proto.tcp->local_port = port;
+        espconn_regist_connectcb(pTcpServer, at_tcpserver_listen);
+        espconn_accept(pTcpServer);
+        espconn_regist_time(pTcpServer, server_timeover, 0);
+        os_printf("TcpServer success port: %d\r\n", (int) port);
       }
-      pUdpServer->type = ESPCONN_UDP;
-      pUdpServer->state = ESPCONN_NONE;
-      pUdpServer->proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
-      pUdpServer->proto.udp->local_port = port;
-      pUdpServer->reverse = NULL;
-      espconn_regist_recvcb(pUdpServer, at_udpserver_recv);
-      espconn_create(pUdpServer);
+
+      if(type != 1) {
+        pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
+        if (pUdpServer == NULL)
+        {
+          os_printf("UdpServer Failure\r\n");
+          return;
+        }
+        pUdpServer->type = ESPCONN_UDP;
+        pUdpServer->state = ESPCONN_NONE;
+        pUdpServer->proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
+        pUdpServer->proto.udp->local_port = port;
+        pUdpServer->reverse = NULL;
+        espconn_regist_recvcb(pUdpServer, at_udpserver_recv);
+        espconn_create(pUdpServer);
         os_printf("UdpServer success port: %d\r\n",(int)  port);
-  }
-//    if(pLink[0].linkEn)
-//    {
-//      uart0_sendStr("Link is builded\r\n");
-//      return;
-//    }
-//    pLink[0].pCon = (struct espconn *)os_zalloc(sizeof(struct espconn));
-//    if (pLink[0].pCon == NULL)
-//    {
-//      uart0_sendStr("Link buile Failure\r\n");
-//      return;
-//    }
-//    pLink[0].pCon->type = ESPCONN_TCP;
-//    pLink[0].pCon->state = ESPCONN_NONE;
-//    pLink[0].linkId = 0;
-//    pLink[0].linkEn = TRUE;
-//
-//    pLink[0].pCon->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
-//    pLink[0].pCon->proto.tcp->local_port = port;
-//
-//    pLink[0].pCon->reverse = &pLink[0];
-//
-//    espconn_regist_connectcb(pLink[0].pCon, user_test_tcpserver_listen);
-//    espconn_accept(pLink[0].pCon);
-//    at_linkNum++;
+      }
   }
   else
   {
