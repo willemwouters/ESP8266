@@ -9,6 +9,9 @@
 <div id="main">
 <h2>Wifi status </h2>
 <p>Current WiFi mode: <br />%WiFiMode%</p>
+<p>Current Ip mode: <br />%IpSettings%</p>
+
+
 </div>
 
 </body>

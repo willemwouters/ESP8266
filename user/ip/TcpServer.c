@@ -39,7 +39,7 @@ at_tcpserver_discon_cb(void *arg)
   struct espconn *pespconn = (struct espconn *) arg;
   espServerConnectionType *linkTemp = (espServerConnectionType *) pespconn->reverse;
 
-  os_printf("Diconcect C: %p\r\n", arg);
+  os_printf("DEBUG Diconcect C: %p\r\n", arg);
 
   if (pespconn == NULL)
   {
@@ -48,7 +48,7 @@ at_tcpserver_discon_cb(void *arg)
 
   linkTemp->linkEn = FALSE;
   linkTemp->pCon = NULL;
-  os_printf("con EN? %d\r\n", linkTemp->linkId);
+  os_printf("DEBUG con EN? %d\r\n", linkTemp->linkId);
   if(linkTemp->teToff == TRUE)
   {
     linkTemp->teToff = FALSE;
@@ -73,18 +73,18 @@ at_tcpclient_recv(void *arg, char *pdata, unsigned short len)
   struct espconn *pespconn = (struct espconn *)arg;
   at_linkConType *linkTemp = (at_linkConType *)pespconn->reverse;
   char temp[32];
-    os_printf("at_tcpclient_recv: %s", pdata);
+    os_printf("DEBUG at_tcpclient_recv: %s", pdata);
 
   if(at_ipMux)
   {
-    os_printf( "\r\n+IPD,%d,%d: %s",
+    os_printf( "\r\nDEBUG +IPD,%d,%d: %s",
                linkTemp->linkId, len, pdata);
    // uart0_sendStr(temp);
     //uart0_tx_buffer(pdata, len);
   }
   else if(IPMODE == FALSE)
   {
-    os_printf(temp, "\r\n+IPD,%d: %s", len, pdata);
+    os_printf(temp, "\r\nDEBUG +IPD,%d: %s", len, pdata);
  //   uart0_sendStr(temp);
   ///  uart0_tx_buffer(pdata, len);
   }
@@ -112,7 +112,7 @@ at_tcpclient_sent_cb(void *arg)
     ETS_UART_INTR_ENABLE();
     return;
   }
-  os_printf("\r\nSEND OK\r\n");
+  os_printf("\r\nDEBUG SEND OK\r\n");
   specialAtState = TRUE;
   at_state = at_statIdle;
 }
@@ -127,7 +127,7 @@ at_tcpserver_recon_cb(void *arg, sint8 errType)
   struct espconn *pespconn = (struct espconn *)arg;
   espServerConnectionType *linkTemp = (espServerConnectionType *)pespconn->reverse;
 
-  os_printf("S conect C: %p\r\n", arg);
+  os_printf("DEBUG S conect C: %p\r\n", arg);
 
   if(pespconn == NULL)
   {
@@ -136,7 +136,7 @@ at_tcpserver_recon_cb(void *arg, sint8 errType)
 
   linkTemp->linkEn = false;
   linkTemp->pCon = NULL;
-  os_printf("con EN? %d\r\n", linkTemp->linkId);
+  os_printf("DEBUG con EN? %d\r\n", linkTemp->linkId);
   
   if(linkTemp->teToff == TRUE)
   {
@@ -152,7 +152,7 @@ at_tcpserver_listen(void *arg)
   struct espconn *pespconn = (struct espconn *)arg;
   uint8_t i;
 
-  os_printf("get tcpClient:\r\n");
+  os_printf("DEBUG get tcpClient:\r\n");
   for(i=0;i<at_linkMax;i++)
   {
     if(pLink[i].linkEn == FALSE)
@@ -177,7 +177,7 @@ at_tcpserver_listen(void *arg)
   espconn_regist_reconcb(pespconn, at_tcpserver_recon_cb);
   espconn_regist_disconcb(pespconn, at_tcpserver_discon_cb);
   espconn_regist_sentcb(pespconn, at_tcpclient_sent_cb);///////
-  os_printf("Link\r\n");
+  os_printf("DEBUG Link\r\n");
 }
 
 
@@ -194,7 +194,7 @@ at_udpserver_recv(void *arg, char *pusrdata, unsigned short len)
   char temp[32];
   uint8_t i;
 
-  os_printf("get udpClient:\r\n");
+  os_printf("DEBUG get udpClient:\r\n");
 
   if(pespconn->reverse == NULL)
   {
@@ -226,7 +226,7 @@ at_udpserver_recv(void *arg, char *pusrdata, unsigned short len)
   {
     return;
   }
-  os_printf(temp, "\r\n+IPD,%d,%d: %s",
+  os_printf(temp, "\r\nDEBUG+IPD,%d,%d: %s",
              linkTemp->linkId, len, pusrdata);
   //uart0_sendStr(temp);
  // uart0_tx_buffer(pusrdata, len);
@@ -258,6 +258,17 @@ void ICACHE_FLASH_ATTR SetStateServer(BOOL enable) {
   }
 }
 
+void ICACHE_FLASH_ATTR GetTcpServerStatus(char * data) 
+{
+  os_sprintf(data," Tcp Server running: %d \r\n", serverEn);
+  if(serverEn) {
+    if(pTcpServer != NULL)
+    os_sprintf(data, " Tcp Server port: %d \r\n", pTcpServer->proto.tcp->local_port);
+
+  if(pTcpServer != NULL)
+    os_sprintf(data, " Udp Server port: %d \r\n", pUdpServer->proto.udp->local_port);
+  }
+}
 /**
   * @brief  Setup commad of module as server.
   * @param  id: commad id number
@@ -278,14 +289,14 @@ SetupServer(int enable, int port, int type)
 
   if(enable == 0)
   {
-    os_printf("SetupServer error 1\r\n");
+    os_printf("DEBUG SetupServer error 1\r\n");
       return;
     
   }
    
   if(enable == serverEn)
   {
-    os_printf("ERROR ERROR no change\r\n");
+    os_printf("DEBUG ERROR ERROR no change\r\n");
     return;
   }
 
@@ -294,7 +305,7 @@ SetupServer(int enable, int port, int type)
     pTcpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
     if (pTcpServer == NULL)
     {
-      os_printf("TcpServer Failure\r\n");
+      os_printf("DEBUG TcpServer Failure\r\n");
       return;
     }
 
@@ -306,14 +317,14 @@ SetupServer(int enable, int port, int type)
         espconn_regist_connectcb(pTcpServer, at_tcpserver_listen);
         espconn_accept(pTcpServer);
         espconn_regist_time(pTcpServer, server_timeover, 0);
-        os_printf("TcpServer success port: %d\r\n", (int) port);
+        os_printf("DEBUG TcpServer success port: %d\r\n", (int) port);
       }
 
       if(type != 1) {
         pUdpServer = (struct espconn *)os_zalloc(sizeof(struct espconn));
         if (pUdpServer == NULL)
         {
-          os_printf("UdpServer Failure\r\n");
+          os_printf("DEBUG UdpServer Failure\r\n");
           return;
         }
         pUdpServer->type = ESPCONN_UDP;
@@ -323,13 +334,13 @@ SetupServer(int enable, int port, int type)
         pUdpServer->reverse = NULL;
         espconn_regist_recvcb(pUdpServer, at_udpserver_recv);
         espconn_create(pUdpServer);
-        os_printf("UdpServer success port: %d\r\n",(int)  port);
+        os_printf("DEBUG UdpServer success port: %d\r\n",(int)  port);
       }
   }
   else
   {
     /* restart */
-    os_printf("we must restart\r\n");
+    os_printf("DEBUG we must restart\r\n");
     return;
   }
   serverEn = enable;

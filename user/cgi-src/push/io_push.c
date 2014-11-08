@@ -7,8 +7,7 @@
 
 #include "wifi/WifiUtility.h"
 
-//This cgi uses the routines above to connect to a specific access point with the
-//given ESSID using the given password.
+//This cgi is when initial connection is setup with push page   io.push
 int ICACHE_FLASH_ATTR cgiIOListen(HttpdConnData *connData) {
 	char * msg = "data: connection opened\n\n";
 	httpdStartResponse(connData, 200);

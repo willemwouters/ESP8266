@@ -27,6 +27,8 @@ void SetStateServer(BOOL enable);
 
 BOOL IsServerRunning();
 void SetupServer(int enable, int port, int type);
+void GetTcpServerStatus(char * data);
+
 
 
 // static void at_tcpserver_discon_cb(void *arg);

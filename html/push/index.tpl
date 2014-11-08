@@ -18,6 +18,22 @@
 		}, false);
 
 
+
+		var sourceIo = new EventSource('/push/io.push');
+
+	  sourceIo.addEventListener('message', function(e) {
+	  		$("#io").append(e.data + "<br /> \n\r");
+		}, false);
+
+		sourceIo.addEventListener('open', function(e) {
+		  $("#io").append("Connection opened<br /> \n\r");
+		}, false);
+
+		sourceIo.addEventListener('error', function(e) {
+		  if (e.readyState == EventSource.CLOSED) {  }
+		}, false);
+
+
 		$(function() {
 				$('form#msgform').submit(function(event) {
 					event.preventDefault();
@@ -51,6 +67,8 @@
 
 
 	<div class="section">
+		<p>Raw Feedback from: /push/io.push </p> <br />
+		<div id="io"></div>
 		<p>Raw Feedback from: /push/listen.push </p> <br />
 		<div id="messages"></div>
 	</div>

@@ -10,6 +10,9 @@
 #include "cgi-src/tcp/tcprequest_cgi.h"
 #include "cgi-src/push/listen_push.h"
 #include "cgi-src/push/index_tpl.h"
+#include "cgi-src/push/console_tpl.h"
+#include "cgi-src/push/console_push.h"
+#include "cgi-src/push/io_push.h"
 #include "cgi-src/tcp/serverconfig_tpl.h"
 #include "cgi-src/tcp/serverstatus_tpl.h"
 #include "tty/stdout.h"
@@ -28,8 +31,10 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/push", cgiRedirect, "/push/index.tpl"},
 	{"/push/", cgiRedirect, "/push/index.tpl"},
 	{"/push/listen.push", cgiPushListen},
-	{"/push/io.push", cgiEspFsTemplate, tplPushIndex},
+	{"/push/io.push", cgiIOListen},
 	{"/push/index.tpl", cgiEspFsTemplate, tplPushIndex},
+	{"/push/console.push", cgiPushConsole},
+	{"/push/console.tpl", cgiEspFsTemplate, tplPushConsole},
 	{"/push/index.cgi", cgiPushIndexRequest},
 
 	{"/tcp", cgiRedirect, "/tcp/request.tpl"},

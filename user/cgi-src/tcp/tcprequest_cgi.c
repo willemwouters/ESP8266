@@ -10,7 +10,7 @@
 #include "ip/TcpClient.h"
 
 
-///Template code for the WLAN page.
+//Template code for the Tcp request
 void ICACHE_FLASH_ATTR tplTcpRequest(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
 	static struct station_config stconf;
@@ -19,10 +19,7 @@ void ICACHE_FLASH_ATTR tplTcpRequest(HttpdConnData *connData, char *token, void 
 	os_strcpy(buff, "Unknown");
 	if (os_strcmp(token, "WiFiMode")==0) {
 		
-		char ipSettings[256] = { 0};
-		GetIpSettings(ipSettings);
-		os_strcpy(buff, ipSettings);
-	} else if (os_strcmp(token, "cmd")==0) {
+		
 		os_strcpy(buff, "GET / HTTP/1.1\r\nCache-Control: max-age=3600\r\nUser-Agent: esp8266\r\n\r\n");
 	}
 	
@@ -74,8 +71,7 @@ char *str_replace(char *orig, char *rep, char *with) {
     return result;
 }
 
-//This cgi uses the routines above to connect to a specific access point with the
-//given ESSID using the given password.
+//This cgi for creating TCP Request
 int ICACHE_FLASH_ATTR cgiTcpRequest(HttpdConnData *connData) {
 	char ip[128];
 	char port[128];
@@ -100,7 +96,7 @@ int ICACHE_FLASH_ATTR cgiTcpRequest(HttpdConnData *connData) {
 
 	//cmd = str_replace((char*) cmd, "%2f", "/");
 
-	os_printf("Sending to: \r\n%s %d %s--- \r\n", ip, atoi(port), cmdp );
+	os_printf("DEBUG Sending to: \r\n%s %d %s--- \r\n", ip, atoi(port), cmdp );
 	//TcpSend(TCP, "192.168.178.1", 80, "GET / HTTP/1.0\r\n\r\n");
 	TcpSend(TCP, ip, atoi(port),  cmd);
 

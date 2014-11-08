@@ -13,7 +13,7 @@
 #include "io/key.h"
 
 
-#define PLUG_KEY_NUM            2
+#define PLUG_KEY_NUM            1
 
 LOCAL struct keys_param keys;
 LOCAL struct single_key_param *single_key[PLUG_KEY_NUM];
@@ -29,8 +29,7 @@ LOCAL struct single_key_param *single_key[PLUG_KEY_NUM];
 
 
 
-//This cgi uses the routines above to connect to a specific access point with the
-//given ESSID using the given password.
+//This cgi is when opening push index
 int ICACHE_FLASH_ATTR cgiPushIndexRequest(HttpdConnData *connData) {
 	char text[128];
 	httpdFindArg(connData->postBuff, "text", text, sizeof(text));
@@ -41,26 +40,29 @@ int ICACHE_FLASH_ATTR cgiPushIndexRequest(HttpdConnData *connData) {
 
 LOCAL void ICACHE_FLASH_ATTR user_plug_short_press(void)
 {
-   os_printf("User press short !!!!!!!!!!!!!!! \r\n");
-   	httpdPushMessage("/push/io.push", "Short press");
-		httpdPushMessage("/push/listen.push", "Short press");
+	char * msg = "{ \"GPIO0\": \"SHORT PRESS\" }" ;
+    os_printf("DEBUG User press short !!!!!!!!!!!!!!! \r\n");
+	httpdPushMessage("/push/io.push", msg);
+
 
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_plug_long_press(void)
 {
-	os_printf("User press long !!!!!!!!!!!!!!! \r\n");
-	httpdPushMessage("/push/io.push", "Long press");
-		httpdPushMessage("/push/listen.push", "Long press");
+	char * msg = "{ \"GPIO0\": \"LONG PRESS\" }" ;
+	os_printf("DEBUG User press long !!!!!!!!!!!!!!! \r\n");
+	httpdPushMessage("/push/io.push", msg);
 }
 
 
 void initIntGpio() {
+		os_printf("GPIO Callback setup \r\n");
+
 	single_key[0] = key_init_single(PLUG_KEY_0_IO_NUM, PLUG_KEY_0_IO_MUX, PLUG_KEY_0_IO_FUNC,
                                     user_plug_long_press, user_plug_short_press);
 
-single_key[1] = key_init_single(PLUG_KEY_2_IO_NUM, PLUG_KEY_2_IO_MUX, PLUG_KEY_2_IO_FUNC,
-                                    user_plug_long_press, user_plug_short_press);
+// single_key[1] = key_init_single(PLUG_KEY_2_IO_NUM, PLUG_KEY_2_IO_MUX, PLUG_KEY_2_IO_FUNC,
+//                                     user_plug_long_press, user_plug_short_press);
     keys.key_num = PLUG_KEY_NUM;
     keys.single_key = single_key;
 
@@ -70,10 +72,11 @@ single_key[1] = key_init_single(PLUG_KEY_2_IO_NUM, PLUG_KEY_2_IO_MUX, PLUG_KEY_2
 //Template code for the WLAN page.
 void ICACHE_FLASH_ATTR tplPushIndex(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
-   
+   	os_printf("tplPushIndex called  \r\n");
+
    // ETS_GPIO_INTR_ATTACH (func, arg) 
    // ETS_GPIO_INTR_ATTACH (func, arg) 
-initIntGpio();
+	initIntGpio();
 	if (token==NULL) return;
 	int i = GPIO_INPUT_GET(BIT0);
 	int b = GPIO_INPUT_GET(BIT1);

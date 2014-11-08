@@ -20,23 +20,25 @@ int GetWifiStatus() {
   * @retval None
   */
 void ICACHE_FLASH_ATTR
-GetIpSettings()//add get station ip and ap ip
+GetIpConfig(char * data)//add get station ip and ap ip
 {
   struct ip_info pTempIp;
   //char temp[64];
 
-  if((GetWifiMode() == 3)||(GetWifiMode() == 2))
+  if((GetWifiMode() == 2)||(GetWifiMode() == 3))
   {
+    os_printf("DEBUG Wifi mode 1= %d \r\n", GetWifiMode());
     wifi_get_ip_info(0x01, &pTempIp);
-    os_printf("%d.%d.%d.%d\r\n",
+    os_sprintf(data, "%d.%d.%d.%d\r\n",
                IP2STR(&pTempIp.ip));
   // uart0_sendStr(temp);
 //    mdState = m_gotip; /////////
   }
-  if((GetWifiMode() == 1)||(GetWifiMode() == 2))
+  if((GetWifiMode() == 1)||(GetWifiMode() == 3))
   {
+    os_printf("DEBUG Wifi mode 2= %d \r\n", GetWifiMode());
     wifi_get_ip_info(0x00, &pTempIp);
-    os_printf("%d.%d.%d.%d\r\n",
+    os_sprintf(data, "%s %d.%d.%d.%d\r\n", data, 
                IP2STR(&pTempIp.ip));
     //uart0_sendStr(temp);
 //    mdState = m_gotip; /////////
@@ -56,7 +58,7 @@ void ICACHE_FLASH_ATTR
 PrintIpMode()
 {
   int at_wifiMode = wifi_get_opmode();
-  os_printf("%d\r\n", at_wifiMode);
+  os_printf("DEBUG %d\r\n", at_wifiMode);
 }
 
 /**
@@ -65,20 +67,20 @@ PrintIpMode()
   * @retval None
   */
 void ICACHE_FLASH_ATTR
-GetIpConfig(char * data)
+GetWifiConfig(char * data)
 {
   struct softap_config apConfig;
   struct station_config stationConfig;
 
   wifi_station_get_config(&stationConfig);
   wifi_softap_get_config(&apConfig);
-  os_sprintf(data, "\"%s\",\"%s\",%d,%d <br />\r\n",
+  os_sprintf(data, "DEBUG \"%s\",\"%s\",%d,%d <br />\r\n",
              apConfig.ssid,
              apConfig.password,
              apConfig.channel,
              apConfig.authmode);
 
-  os_sprintf(data, "%s \"%s\",\"%s\"<br />\r\n",
+  os_sprintf(data, "%sDEBUG \"%s\",\"%s\"<br />\r\n",
              data,
              stationConfig.ssid,
              stationConfig.password);

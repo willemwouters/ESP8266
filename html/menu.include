@@ -6,4 +6,6 @@
 	<li><a href="/tcp/serverconfig.tpl">TCP Server - Config</a></li>
 	<li><a href="/tcp/serverstatus.tpl">TCP Server - Status</a></li>
 	<li><a href="/push/index.tpl">HTML5 Push examples IO</a></li>
+	<li><a href="/push/console.tpl">HTML5 Debug Console</a></li>
+
 </ul>

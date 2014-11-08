@@ -9,14 +9,13 @@
 
 
 
-//This cgi uses the routines above to connect to a specific access point with the
-//given ESSID using the given password.
+//This cgi uses the routines POST save tcp server enable
 int ICACHE_FLASH_ATTR cgiTcpServerEnable(HttpdConnData *connData) {
 	int typeI = 0;
 	char state[128];
 	httpdFindArg(connData->postBuff, "state", state, sizeof(state));
 
-	os_printf("State to: \r\n%s --- \r\n", state );
+	os_printf("DEBUG State to: \r\n%s --- \r\n", state );
 	//TcpSend(TCP, ip, atoi(port),  cmd);
 	if(os_strcmp(state, "1") == 0) {
 		typeI = 1;
@@ -28,8 +27,7 @@ int ICACHE_FLASH_ATTR cgiTcpServerEnable(HttpdConnData *connData) {
 }
 
 
-//This cgi uses the routines above to connect to a specific access point with the
-//given ESSID using the given password.
+//This cgi uses the routines POST save tcp server settings
 int ICACHE_FLASH_ATTR cgiTcpServerSave(HttpdConnData *connData) {
 	char type[128];
 	char port[128];
@@ -37,7 +35,7 @@ int ICACHE_FLASH_ATTR cgiTcpServerSave(HttpdConnData *connData) {
 	httpdFindArg(connData->postBuff, "type", type, sizeof(type));
 	httpdFindArg(connData->postBuff, "port", port, sizeof(port));
 
-	os_printf("Sending to: \r\n%s %d --- \r\n", type, atoi(port) );
+	os_printf("DEBUG Sending to: \r\n%s %d --- \r\n", type, atoi(port) );
 	//TcpSend(TCP, ip, atoi(port),  cmd);
 	if(os_strcmp(type, "TCP") == 0) {
 		typeI = 1;
@@ -51,7 +49,7 @@ int ICACHE_FLASH_ATTR cgiTcpServerSave(HttpdConnData *connData) {
 	return HTTPD_CGI_DONE;
 }
 
-//Template code for the WLAN page.
+//This tpl page for TCP server config
 void ICACHE_FLASH_ATTR tplTcpServerConfig(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
 	

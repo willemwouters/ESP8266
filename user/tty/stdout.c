@@ -14,7 +14,7 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "uart_hw.h"
-
+#include "httpd/httpd.h"
 static void ICACHE_FLASH_ATTR stdoutUartTxd(char c) {
 	//Wait until there is room in the FIFO
 	while (((READ_PERI_REG(UART_STATUS(0))>>UART_TXFIFO_CNT_S)&UART_TXFIFO_CNT)>=126) ;
@@ -22,10 +22,29 @@ static void ICACHE_FLASH_ATTR stdoutUartTxd(char c) {
 	WRITE_PERI_REG(UART_FIFO(0), c);
 }
 
+	char pushBuffer[256] = { 0 };
+	int pushBufferCount = 0;
 static void ICACHE_FLASH_ATTR stdoutPutchar(char c) {
 	//convert \n -> \r\n
 	if (c=='\n') stdoutUartTxd('\r');
 	stdoutUartTxd(c);
+	
+	if(c=='\n') {
+		if(pushBuffer[0] == 'D' && pushBuffer[1] == 'E' && pushBuffer[2] == 'B' && pushBuffer[3] == 'U')
+		{
+			httpdPushMessage("/push/console.push", pushBuffer);
+		}
+		os_memset(pushBuffer, 0, 256);
+		pushBufferCount=0;
+	} else {
+		pushBuffer[pushBufferCount] = c;
+		pushBufferCount++;
+		if(pushBufferCount == 256) {
+			pushBufferCount = 0;
+			os_memset(pushBuffer, 0, 256);
+		}
+	}
+
 }
 
 

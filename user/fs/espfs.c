@@ -115,11 +115,11 @@ EspFsFile ICACHE_FLASH_ATTR *espFsOpen(char *fileName) {
 		//Grab the next file header.
 		os_memcpy(&h, p, sizeof(EspFsHeader));
 		if (h.magic!=0x73665345) {
-			os_printf("Magic mismatch. EspFS image broken.\n");
+			os_printf("DEBUG Magic mismatch. EspFS image broken.\n");
 			return NULL;
 		}
 		if (h.flags&FLAG_LASTFILE) {
-			os_printf("End of image.\n");
+			os_printf("DEBUG End of image.\n");
 			return NULL;
 		}
 		//Grab the name of the file.
@@ -147,12 +147,12 @@ EspFsFile ICACHE_FLASH_ATTR *espFsOpen(char *fileName) {
 				//Decoder params are stored in 1st byte.
 				memcpyAligned(&parm, r->posComp, 1);
 				r->posComp++;
-				os_printf("Heatshrink compressed file; decode parms = %x\n", parm);
+				os_printf("DEBUG Heatshrink compressed file; decode parms = %x\n", parm);
 				dec=heatshrink_decoder_alloc(16, (parm>>4)&0xf, parm&0xf);
 				r->decompData=dec;
 #endif
 			} else {
-				os_printf("Invalid compression: %d\n", h.compression);
+				os_printf("DEBUG Invalid compression: %d\n", h.compression);
 				return NULL;
 			}
 			return r;

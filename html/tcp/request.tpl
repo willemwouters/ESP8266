@@ -32,11 +32,11 @@ window.onload=function(e) {
 			<input type="submit" name="submit" value="Send">
 		</p> 
 		</form> <br />
-</div>
+
 
 <div id="console">
 	
 </div>
 
-
+</div>
 </body></html>

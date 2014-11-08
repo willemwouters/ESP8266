@@ -33,7 +33,7 @@ void ICACHE_FLASH_ATTR wifiScanDoneCb(void *arg, STATUS status) {
 	int n;
 	
 	struct bss_info *bss_link = (struct bss_info *)arg;
-	os_printf("wifiScanDoneCb %d\n", status);
+	os_printf("DEBUG wifiScanDoneCb %d\n", status);
 	if (status!=OK) {
 		cgiWifiAps.scanInProgress=0;
 		wifi_station_disconnect(); //test HACK
@@ -69,7 +69,7 @@ void ICACHE_FLASH_ATTR wifiScanDoneCb(void *arg, STATUS status) {
 		bss_link = bss_link->next.stqe_next;
 		n++;
 	}
-	os_printf("Scan done: found %d APs\n", n);
+	os_printf("DEBUG Scan done: found %d APs\n", n);
 	//We're done.
 	cgiWifiAps.scanInProgress=0;
 }
@@ -82,7 +82,7 @@ static void ICACHE_FLASH_ATTR wifiStartScan() {
 	x=wifi_station_get_connect_status();
 	if (x!=STATION_GOT_IP) {
 		//Unit probably is trying to connect to a bogus AP. This messes up scanning. Stop that.
-		os_printf("STA status = %d. Disconnecting STA...\n", x);
+		os_printf("DEBUG STA status = %d. Disconnecting STA...\n", x);
 		wifi_station_disconnect();
 	}
 	wifi_station_scan(NULL, wifiScanDoneCb);
@@ -132,12 +132,12 @@ static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
 	int x=wifi_station_get_connect_status();
 	if (x==STATION_GOT_IP) {
 		//Go to STA mode. This needs a reset, so do that.
-		os_printf("Got an IP will set mode to AP and reboot .\n");
+		os_printf("DEBUG Got an IP will set mode to AP and reboot .\n");
 
 		//wifi_set_opmode(1);
 		system_restart();
 	} else {
-		os_printf("Connect fail. Not going into STA-only mode.\n");
+		os_printf("DEBUG Connect fail. Not going into STA-only mode.\n");
 	}
 }
 
@@ -147,7 +147,7 @@ static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
 static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 	int x;
 	static ETSTimer resetTimer;
-	os_printf("Trying to connect to Ap .\n");
+	os_printf("DEBUG Trying to connect to Ap .\n");
 
 	wifi_station_disconnect();
 	wifi_station_set_config(&stconf);
@@ -157,7 +157,7 @@ static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 		//Schedule disconnect/connect
 		os_timer_disarm(&resetTimer);
 		os_timer_setfn(&resetTimer, resetTimerCb, NULL);
-			os_printf("Schedules a reset .\n");
+			os_printf("DEBUG chedules a reset .\n");
 
 		os_timer_arm(&resetTimer, 4000, 0);
 	}
@@ -167,8 +167,7 @@ static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 
 
 
-//This cgi uses the routines above to connect to a specific access point with the
-//given ESSID using the given password.
+//This cgi uses the routines above to POST save AP settings
 int ICACHE_FLASH_ATTR cgiWiFiApSave(HttpdConnData *connData) {
 	char ssid[128];
 	char password[128];

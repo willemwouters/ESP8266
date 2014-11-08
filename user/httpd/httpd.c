@@ -29,6 +29,8 @@
 //Max post buffer len
 #define MAX_POST 1024
 
+#define PUSHCONNECTION_TIMEOUT 720
+
 //This gets set at init time.
 static HttpdBuiltInUrl *builtInUrls;
 
@@ -84,7 +86,7 @@ static HttpdConnData ICACHE_FLASH_ATTR *httpdFindConnData(void *arg) {
 	for (i=0; i<MAX_CONN; i++) {
 		if (connData[i].conn==(struct espconn *)arg) return &connData[i];
 	}
-	os_printf("FindConnData: Huh? Couldn't find connection for %p\n", arg);
+	os_printf("DEBUG FindConnData: Huh? Couldn't find connection for %p\n", arg);
 	return NULL; //WtF?
 }
 
@@ -141,18 +143,18 @@ int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLe
 	if (line==NULL) return 0;
 	p=line;
 	while(p!=NULL && *p!='\n' && *p!='\r' && *p!=0) {
-		os_printf("findArg: %s\n", p);
+		os_printf("DEBUG findArg: %s\n", p);
 		if (os_strncmp(p, arg, os_strlen(arg))==0 && p[strlen(arg)]=='=') {
 			p+=os_strlen(arg)+1; //move p to start of value
 			e=(char*)os_strstr(p, "&");
 			if (e==NULL) e=p+os_strlen(p);
-			os_printf("findArg: val %s len %d\n", p, (e-p));
+			os_printf("DEBUG findArg: val %s len %d\n", p, (e-p));
 			return httpdUrlDecode(p, (e-p), buff, buffLen);
 		}
 		p=(char*)os_strstr(p, "&");
 		if (p!=NULL) p+=1;
 	}
-	os_printf("Finding %s in %s: Not found :/\n", arg, line);
+	os_printf("DEBUG Finding %s in %s: Not found :/\n", arg, line);
 	return -1; //not found
 }
 
@@ -161,7 +163,7 @@ int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLe
 void ICACHE_FLASH_ATTR httpdStartResponse(HttpdConnData *conn, int code) {
 	char buff[128];
 	int l;
-	l=os_sprintf(buff, "HTTP/1.0 %d OK\r\nServer: esp8266-httpd/0.1\r\n", code);
+	l=os_sprintf(buff, "HTTP/1.1 %d OK\r\nServer: esp8266-httpd/1.0\r\n", code);
 	espconn_sent(conn->conn, (uint8 *)buff, l);
 }
 
@@ -207,7 +209,7 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 
 	//if(pushTimerTimeoutCounter == 30) {
 	
-		os_printf("Disconnecting the Push Tcp Stream\n");
+		os_printf("DEBUG Disconnecting the Push Tcp Stream\n");
 		httpdRetireConn(conn);
 		espconn_regist_time(conn->conn, 1, 0); // needs to be reset
 		espconn_disconnect(conn->conn);
@@ -222,7 +224,7 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 	//See if the url is somewhere in our internal url table.
 	char dataRaw[256];
 	os_sprintf(dataRaw,"data: %s\n\n", message);
-	os_printf("Sending out a pushmessage:%s---\r\n", dataRaw);
+	//os_printf("Sending out a pushmessage:%s---\r\n", dataRaw);
 
 	int i;
 
@@ -232,7 +234,7 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 		if (conn!=NULL && conn->url != NULL) {
 
 			if(os_strcmp(httpdGetMimetype(conn->url), "text/event-stream") == 0 &&  os_strcmp(conn->url, url) == 0) {
-			os_printf("Send push Message to: %s-%s-\r\n", conn->url, dataRaw);
+			//os_printf("Send push Message to: %s-%s-\r\n", conn->url, dataRaw);
 			httpdStartResponse(connData, 200);
 			httpdHeader(connData, "Content-Type", httpdGetMimetype(connData->url));
 	
@@ -241,7 +243,6 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 		}
 	}
 }
-#define PUSHCONNECTION_TIMEOUT 60
  void ICACHE_FLASH_ATTR httpdSentCb(void *arg) {
 	int r;
 	HttpdConnData *conn=httpdFindConnData(arg);
@@ -252,13 +253,13 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 		if(os_strcmp(httpdGetMimetype(conn->url), "text/event-stream") == 0) {
 			os_timer_disarm(&resetTimerPush);
 			os_timer_setfn(&resetTimerPush, disconnectPushTimerCb, conn);
-			os_printf("Conn %p is done. push stream, wait 60 sec Closing: %s .\n", conn->conn, conn->url);
+			os_printf("Conn %p is done. push stream, wait %d sec Closing: %s .\n", conn->conn, PUSHCONNECTION_TIMEOUT,  conn->url);
 			os_timer_arm(&resetTimerPush, PUSHCONNECTION_TIMEOUT * 1000, 0);
 			espconn_regist_time(conn->conn, PUSHCONNECTION_TIMEOUT, 0);
 
 		} else {
 			espconn_regist_time(conn->conn, 1, 0);  // needs to be reset
-			os_printf("Conn %p is done. cgi page Closing: %s.\n", conn->conn, conn->url);
+			os_printf("DEBUG Conn %p is done. cgi page Closing: %s.\n", conn->conn, conn->url);
 			espconn_disconnect(conn->conn);
 			httpdRetireConn(conn);
 		}
@@ -280,7 +281,7 @@ static void ICACHE_FLASH_ATTR httpdSendResp(HttpdConnData *conn) {
 	while (builtInUrls[i].url!=NULL && conn->url!=NULL) {
 //		os_printf("%s == %s?\n", builtInUrls[i].url, conn->url);
 		if (os_strcmp(builtInUrls[i].url, conn->url)==0 || builtInUrls[i].url[0]=='*') {
-			os_printf("Is url index %d\n", i);
+			os_printf("DEBUG Is url index %d\n", i);
 			conn->cgiData=NULL;
 			conn->cgi=builtInUrls[i].cgiCb;
 			conn->cgiArg=builtInUrls[i].cgiArg;
@@ -294,7 +295,7 @@ static void ICACHE_FLASH_ATTR httpdSendResp(HttpdConnData *conn) {
 		i++;
 	}
 	//Can't find :/
-	os_printf("%s not found. 404!\n", conn->url);
+	os_printf("DEBUG %s not found. 404!\n", conn->url);
 	espconn_sent(conn->conn, (uint8 *)httpNotFoundHeader, os_strlen(httpNotFoundHeader));
 	conn->cgi=NULL; //mark for destruction
 }
@@ -315,12 +316,12 @@ static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 		if (e==NULL) return; //wtf?
 		*e=0; //terminate url part
 
-		os_printf("URL = %s\n", conn->url);
+		os_printf("DEBUG URL = %s\n", conn->url);
 		conn->getArgs=(char*)os_strstr(conn->url, "?");
 		if (conn->getArgs!=0) {
 			*conn->getArgs=0;
 			conn->getArgs++;
-			os_printf("GET args = %s\n", conn->getArgs);
+			os_printf("DEBUG GET args = %s\n", conn->getArgs);
 		} else {
 			conn->getArgs=NULL;
 		}
@@ -329,7 +330,7 @@ static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 		while (h[i]!=' ') i++;
 		conn->postLen=atoi(h+i+1);
 		if (conn->postLen>MAX_POST) conn->postLen=MAX_POST;
-		os_printf("Mallocced buffer for %d bytes of post data.\n", conn->postLen);
+		os_printf("DEBUG Mallocced buffer for %d bytes of post data.\n", conn->postLen);
 		conn->postBuff=(char*)os_malloc(conn->postLen+1);
 		conn->priv->postPos=0;
 	}
@@ -374,7 +375,7 @@ static void ICACHE_FLASH_ATTR httpdRecvCb(void *arg, char *data, unsigned short 
 				//Received post stuff.
 				conn->postBuff[conn->priv->postPos]=0; //zero-terminate
 				conn->priv->postPos=-1;
-				os_printf("Post data: %s\n", conn->postBuff);
+				os_printf("DEBUG Post data: %s\n", conn->postBuff);
 				//Send the response.
 				httpdSendResp(conn);
 				return;
@@ -385,7 +386,7 @@ static void ICACHE_FLASH_ATTR httpdRecvCb(void *arg, char *data, unsigned short 
 
 static void ICACHE_FLASH_ATTR httpdReconCb(void *arg, sint8 err) {
 	HttpdConnData *conn=httpdFindConnData(arg);
-	os_printf("ReconCb\n");
+	os_printf("DEBUG ReconCb\n");
 	if (conn==NULL) return;
 	//Yeah... No idea what to do here. ToDo: figure something out.
 }
