@@ -33,7 +33,8 @@ void ICACHE_FLASH_ATTR wifiScanDoneCb(void *arg, STATUS status) {
 	int n;
 	
 	struct bss_info *bss_link = (struct bss_info *)arg;
-	os_printf("DEBUG wifiScanDoneCb %d\n", status);
+		os_printf("-%s-%s status: %d\r\n", __FILE__, __func__, status);
+
 	if (status!=OK) {
 		cgiWifiAps.scanInProgress=0;
 		wifi_station_disconnect(); //test HACK
@@ -69,7 +70,8 @@ void ICACHE_FLASH_ATTR wifiScanDoneCb(void *arg, STATUS status) {
 		bss_link = bss_link->next.stqe_next;
 		n++;
 	}
-	os_printf("DEBUG Scan done: found %d APs\n", n);
+	os_printf("-%s-%s Scan done: found: %d APs\r\n", __FILE__, __func__, n);
+
 	//We're done.
 	cgiWifiAps.scanInProgress=0;
 }
@@ -82,7 +84,8 @@ static void ICACHE_FLASH_ATTR wifiStartScan() {
 	x=wifi_station_get_connect_status();
 	if (x!=STATION_GOT_IP) {
 		//Unit probably is trying to connect to a bogus AP. This messes up scanning. Stop that.
-		os_printf("DEBUG STA status = %d. Disconnecting STA...\n", x);
+				os_printf("-%s-%s STA status = %d. Disconnecting STA...\r\n", __FILE__, __func__, x);
+
 		wifi_station_disconnect();
 	}
 	wifi_station_scan(NULL, wifiScanDoneCb);
@@ -98,6 +101,7 @@ int ICACHE_FLASH_ATTR cgiWiFiScan(HttpdConnData *connData) {
 	int len;
 	int i;
 	char buff[1024];
+	os_printf("-%s-%s\r\n", __FILE__, __func__);
 	httpdStartResponse(connData, 200);
 	httpdHeader(connData, "Content-Type", "text/json");
 	httpdEndHeaders(connData);
@@ -132,12 +136,12 @@ static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
 	int x=wifi_station_get_connect_status();
 	if (x==STATION_GOT_IP) {
 		//Go to STA mode. This needs a reset, so do that.
-		os_printf("DEBUG Got an IP will set mode to AP and reboot .\n");
+	os_printf("-%s-%s Got an IP will set mode to AP and reboot\r\n", __FILE__, __func__);
 
 		//wifi_set_opmode(1);
 		system_restart();
 	} else {
-		os_printf("DEBUG Connect fail. Not going into STA-only mode.\n");
+		os_printf("-%s-%s Connect fail. Not going into STA-only mode\r\n", __FILE__, __func__);
 	}
 }
 
@@ -147,7 +151,7 @@ static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
 static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 	int x;
 	static ETSTimer resetTimer;
-	os_printf("DEBUG Trying to connect to Ap .\n");
+	os_printf("-%s-%s Trying to connect to Ap\r\n", __FILE__, __func__);
 
 	wifi_station_disconnect();
 	wifi_station_set_config(&stconf);
@@ -157,7 +161,7 @@ static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 		//Schedule disconnect/connect
 		os_timer_disarm(&resetTimer);
 		os_timer_setfn(&resetTimer, resetTimerCb, NULL);
-			os_printf("DEBUG chedules a reset .\n");
+		os_printf("-%s-%s  Schedules a reset \r\n", __FILE__, __func__);
 
 		os_timer_arm(&resetTimer, 4000, 0);
 	}
@@ -172,7 +176,8 @@ int ICACHE_FLASH_ATTR cgiWiFiApSave(HttpdConnData *connData) {
 	char ssid[128];
 	char password[128];
 	//static ETSTimer reassTimer;
-	
+			os_printf("-%s-%s  \r\n", __FILE__, __func__);
+
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
@@ -202,7 +207,8 @@ int ICACHE_FLASH_ATTR cgiWiFiConnect(HttpdConnData *connData) {
 	char essid[128];
 	char passwd[128];
 	static ETSTimer reassTimer;
-	
+	os_printf("-%s-%s  \r\n", __FILE__, __func__);
+
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;

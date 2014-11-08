@@ -38,6 +38,7 @@ struct single_key_param *ICACHE_FLASH_ATTR
 key_init_single(uint8 gpio_id, uint32 gpio_name, uint8 gpio_func, key_function long_press, key_function short_press)
 {
     struct single_key_param *single_key = (struct single_key_param *)os_zalloc(sizeof(struct single_key_param));
+    os_printf("-%s-%s \r\n", __FILE__, __func__);
 
     single_key->gpio_id = gpio_id;
     single_key->gpio_name = gpio_name;
@@ -58,6 +59,7 @@ void ICACHE_FLASH_ATTR
 key_init(struct keys_param *keys)
 {
     uint8 i;
+    os_printf("-%s-%s \r\n", __FILE__, __func__);
 
     ETS_GPIO_INTR_ATTACH(key_intr_handler, keys);
 
@@ -93,6 +95,7 @@ key_init(struct keys_param *keys)
 LOCAL void ICACHE_FLASH_ATTR
 key_5s_cb(struct single_key_param *single_key)
 {
+    os_printf("-%s-%s \r\n", __FILE__, __func__);
     os_timer_disarm(&single_key->key_5s);
 
     // low, then restart
@@ -112,6 +115,7 @@ key_5s_cb(struct single_key_param *single_key)
 LOCAL void ICACHE_FLASH_ATTR
 key_50ms_cb(struct single_key_param *single_key)
 {
+    os_printf("-%s-%s \r\n", __FILE__, __func__);
     os_timer_disarm(&single_key->key_50ms);
 
     // high, then key is up
@@ -139,6 +143,7 @@ key_intr_handler(struct keys_param *keys)
 {
     uint8 i;
     uint32 gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+    os_printf("-%s-%s \r\n", __FILE__, __func__);
 
     for (i = 0; i < keys->key_num; i++) {
         if (gpio_status & BIT(keys->single_key[i]->gpio_id)) {

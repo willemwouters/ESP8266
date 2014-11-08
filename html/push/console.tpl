@@ -29,7 +29,7 @@
 </div>
 
 <div id="main">
-		<h2>Push examples:</h2>
+		<h2>Console output:</h2>
 
 
 	<div class="section">

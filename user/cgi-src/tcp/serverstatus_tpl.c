@@ -10,7 +10,7 @@
 
 //Template code for the Tcp server status
 void ICACHE_FLASH_ATTR tplTcpServerStatus(HttpdConnData *connData, char *token, void **arg) {
-	char buff[1024];
+	char buff[512];
 	//int x;
 	static struct station_config stconf;
 
@@ -21,11 +21,11 @@ void ICACHE_FLASH_ATTR tplTcpServerStatus(HttpdConnData *connData, char *token, 
 	os_strcpy(buff, "Unknown");
 
 	if (os_strcmp(token, "WiFiSettings")==0) {
-		os_printf("DEBUG Getting ip settings to replace token: %s \r\n", token);
+		os_printf("-%s-%s Getting ip settings to replace token: %s \r\n", __FILE__, __func__, token);		
 		char ipSettings[256] = { 0};
 		GetTcpServerStatus(ipSettings);
 		os_strcpy(buff, ipSettings);
-		os_printf("DEBUG Found ip settings : %s \r\n", buff);
+		os_printf("-%s-%s Found ip settings: %s \r\n", __FILE__, __func__, buff);		
 		//delete ipSettings;
 	}
 	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));

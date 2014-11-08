@@ -13,6 +13,9 @@ void ICACHE_FLASH_ATTR tplStatus(HttpdConnData *connData, char *token, void **ar
 	char buff[1024];
 	//int x;
 	static struct station_config stconf;
+		os_printf("-%s-%s \r\n", __FILE__, __func__);
+
+
 	if (token==NULL) return;
 	wifi_station_get_config(&stconf);
 

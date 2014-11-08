@@ -32,6 +32,7 @@ LOCAL struct single_key_param *single_key[PLUG_KEY_NUM];
 //This cgi is when opening push index
 int ICACHE_FLASH_ATTR cgiPushIndexRequest(HttpdConnData *connData) {
 	char text[128];
+	os_printf("-%s-%s \r\n", __FILE__, __func__);
 	httpdFindArg(connData->postBuff, "text", text, sizeof(text));
 	httpdPushMessage("/push/listen.push", text);
 	espconn_sent(connData->conn, (uint8 *) " ", 1);
@@ -41,7 +42,7 @@ int ICACHE_FLASH_ATTR cgiPushIndexRequest(HttpdConnData *connData) {
 LOCAL void ICACHE_FLASH_ATTR user_plug_short_press(void)
 {
 	char * msg = "{ \"GPIO0\": \"SHORT PRESS\" }" ;
-    os_printf("DEBUG User press short !!!!!!!!!!!!!!! \r\n");
+   	os_printf("-%s-%s \r\n", __FILE__, __func__);
 	httpdPushMessage("/push/io.push", msg);
 
 
@@ -50,13 +51,13 @@ LOCAL void ICACHE_FLASH_ATTR user_plug_short_press(void)
 LOCAL void ICACHE_FLASH_ATTR user_plug_long_press(void)
 {
 	char * msg = "{ \"GPIO0\": \"LONG PRESS\" }" ;
-	os_printf("DEBUG User press long !!!!!!!!!!!!!!! \r\n");
+   	os_printf("-%s-%s \r\n", __FILE__, __func__);
 	httpdPushMessage("/push/io.push", msg);
 }
 
 
 void initIntGpio() {
-		os_printf("GPIO Callback setup \r\n");
+   	os_printf("-%s-%s \r\n", __FILE__, __func__);
 
 	single_key[0] = key_init_single(PLUG_KEY_0_IO_NUM, PLUG_KEY_0_IO_MUX, PLUG_KEY_0_IO_FUNC,
                                     user_plug_long_press, user_plug_short_press);
@@ -72,7 +73,7 @@ void initIntGpio() {
 //Template code for the WLAN page.
 void ICACHE_FLASH_ATTR tplPushIndex(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
-   	os_printf("tplPushIndex called  \r\n");
+   	os_printf("-%s-%s \r\n", __FILE__, __func__);
 
    // ETS_GPIO_INTR_ATTACH (func, arg) 
    // ETS_GPIO_INTR_ATTACH (func, arg) 

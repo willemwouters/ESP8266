@@ -17,7 +17,7 @@ void ICACHE_FLASH_ATTR tplWlan(HttpdConnData *connData, char *token, void **arg)
 	int x;
     struct softap_config apConfig;
 	static struct station_config stconf;
-    
+    os_printf("-%s-%s  \r\n", __FILE__, __func__);
 	if (token==NULL) return;
 	wifi_station_get_config(&stconf);
     wifi_softap_get_config(&apConfig);

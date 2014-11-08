@@ -16,7 +16,7 @@
 //Template code for the WLAN page.
 void ICACHE_FLASH_ATTR tplPushConsole(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
-   	os_printf("tplPushConsole called  \r\n");
+   	//os_printf("%s-%s \r\n", __FILE__, __func__);
 
 	if (token==NULL) return;
 	

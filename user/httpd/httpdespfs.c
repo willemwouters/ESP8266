@@ -91,8 +91,8 @@ int ICACHE_FLASH_ATTR cgiEspIncludeFsTemplate(HttpdConnData *connData, char * fi
 	char buff[1025];
 	EspFsFile *file = espFsOpen(fileName);
 	len=espFsRead(file, buff, 1024);
-	os_printf("DEBUG reading: fileName: %s \r\n", fileName);
-	
+	os_printf("-%s-%s reading: fileName: %s\r\n", __FILE__, __func__, fileName);
+
 	if (len!=0) espconn_sent(connData->conn, (uint8 *)buff, len);
 	//if (len!=1024) {
 		//We're done.
@@ -123,7 +123,7 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 	if (tpd==NULL) {
 		//First call to this cgi. Open the file so we can read it.
 		tpd=(TplData *)os_malloc(sizeof(TplData));
-		os_printf("DEBUG Opening file %s \r\n", connData->url);
+		os_printf("-%s-%s Opening file %s\r\n", __FILE__, __func__, connData->url);
 
 		tpd->file=espFsOpen(connData->url);
 		tpd->tplArg=NULL;
@@ -167,15 +167,14 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 			} else {
 				if (buff[x]=='@') {
 					tpd->tokenInclude[tpd->tokenIncludePos++]=0; //zero-terminate token
-					os_printf("DEBUG found include:  %s \r\n", tpd->tokenInclude);
-
+					os_printf("%s-%s found include:  %s \r\n", __FILE__, __func__, tpd->tokenInclude);
 					 cgiEspIncludeFsTemplate(connData, tpd->tokenInclude);
 					//Go collect normal chars again.
 					e=&buff[x+1];
 					tpd->tokenIncludePos=-1;
 				} else if(buff[x]=='%') {
 					tpd->tokenTpl[tpd->tokenTplPos++]=0; //zero-terminate token
-					os_printf("DEBUG found token:  %s \r\n", tpd->tokenTpl);
+					os_printf("%s-%s found token:  %s \r\n", __FILE__, __func__, tpd->tokenTpl);
 
 					((TplCallback)(connData->cgiArg))(connData, tpd->tokenTpl, &tpd->tplArg);
 					//Go collect normal chars again.

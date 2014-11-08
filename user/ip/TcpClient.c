@@ -21,7 +21,7 @@ static ip_addr_t host_ip;
   */
 static void ICACHE_FLASH_ATTR TcpClient_Receive(void *arg, char *pdata, unsigned short len)
 {
- os_printf("\r\nDEBUG RECV OK %s \r\n", pdata);
+ os_printf("-%s-%s data: %s \r\n", __FILE__, __func__, pdata);
  return;
 }
 
@@ -32,7 +32,7 @@ static void ICACHE_FLASH_ATTR TcpClient_Receive(void *arg, char *pdata, unsigned
   */
 static void ICACHE_FLASH_ATTR
 TcpClient_Send_Cb(void *arg) {
-  os_printf("\r\nDEBUG SEND OK\r\n");
+  os_printf("-%s-%s \r\n", __FILE__, __func__);
 }
 
 
@@ -54,7 +54,7 @@ TcpClient_Disconnect_Cb(void *arg) {
   }
   os_free(pespconn);
   linkTemp->linkEn = FALSE;
-  os_printf("DEBUG disconnect\r\n");
+  os_printf("-%s-%s \r\n", __FILE__, __func__);
 }
 
 /**
@@ -67,8 +67,7 @@ TcpClient_Connect_Cb(void *arg) {
   struct espconn *pespconn = (struct espconn *)arg;
   at_linkConType *linkTemp = (at_linkConType *)pespconn->reverse;
 
-  os_printf("DEBUG tcp client connect\r\n");
-  os_printf("pespconn %p\r\n", pespconn);
+  os_printf("-%s-%s \r\n", __FILE__, __func__);
 
   linkTemp->linkEn = TRUE;
   linkTemp->teType = teClient;
@@ -76,10 +75,9 @@ TcpClient_Connect_Cb(void *arg) {
   espconn_regist_disconcb(pespconn, TcpClient_Disconnect_Cb);
   espconn_regist_recvcb(pespconn, TcpClient_Receive);////////
   espconn_regist_sentcb(pespconn, TcpClient_Send_Cb);///////
-  os_printf("DEBUG SEND!!!!  %s-\r\n", data);
+  os_printf("-%s-%s data: %s \r\n", __FILE__, __func__, data);
 
   espconn_sent(pespconn, (uint8_t *) data, os_strlen(data));
-  os_printf("DEBUG Linked\r\n");
 }
 
 /**
@@ -92,10 +90,10 @@ TcpClient_Reconnect_Cb(void *arg, sint8 errType) {
   struct espconn *pespconn = (struct espconn *)arg;
   at_linkConType *linkTemp = (at_linkConType *) pespconn->reverse;
   if(linkTemp->linkEn) {
-    os_printf("DEBUG TcpClient_Reconnect_Cb ALREADY CONNECTED !\r\n");
+    os_printf("-%s-%s ALREADY CONNECTED \r\n", __FILE__, __func__);
     return;
   }
-  os_printf("DEBUG TcpClient_Reconnect_Cb %p\r\n", arg);
+    os_printf("-%s-%s  \r\n", __FILE__, __func__);
 
   if(linkTemp->teToff == TRUE) {
     linkTemp->teToff = FALSE;
@@ -108,17 +106,19 @@ TcpClient_Reconnect_Cb(void *arg, sint8 errType) {
   }   else   {
     linkTemp->repeaTime++;
     if(linkTemp->repeaTime >= 1)  {
-      os_printf("DEBUG repeat over %d\r\n", linkTemp->repeaTime);
+      os_printf("-%s-%s repeat over %d \r\n", __FILE__, __func__, linkTemp->repeaTime);
       linkTemp->repeaTime = 0;
       if(pespconn->proto.tcp != NULL)  {
         os_free(pespconn->proto.tcp);
       }
       os_free(pespconn);
       linkTemp->linkEn = false;
-      os_printf("DEBUG disconnect\r\n");
+      os_printf("-%s-%s disconnected \r\n", __FILE__, __func__);      
       return;
     }
-    os_printf("DEBUG link repeat %d\r\n", linkTemp->repeaTime);
+    os_printf("-%s-%s repeat: %d \r\n", __FILE__, __func__, linkTemp->repeaTime);
+
+
     pespconn->proto.tcp->local_port = espconn_port();
     espconn_connect(pespconn);
   }
@@ -142,10 +142,14 @@ TcpClient_Dns_Cb(const char *name, ip_addr_t *ipaddr, void *arg) {
   at_linkConType *linkTemp = (at_linkConType *) pespconn->reverse;
   if(ipaddr == NULL)  {
     linkTemp->linkEn = FALSE;
-    os_printf("DEBUG DNS Fail/r/n");
+    os_printf("-%s-%s DNS Fail \r\n", __FILE__, __func__);      
+
     return;
   }
-  os_printf("DEBUG DNS found: %d.%d.%d.%d\n",
+
+
+  os_printf("-%s-%s  DNS found: %d.%d.%d.%d\n", 
+            __FILE__, __func__,
             *((uint8 *) &ipaddr->addr),
             *((uint8 *) &ipaddr->addr + 1),
             *((uint8 *) &ipaddr->addr + 2),
@@ -184,7 +188,7 @@ void TcpSend(espTypes type, char * ipAddress, int32_t port, char * cmd) {
   switch(type)
   {
     case ESPCONN_TCP:
-      os_printf("DEBUG Setting up connection to: %s %d \r\n", ipAddress, (int) port);
+      os_printf("-%s-%s DNS Fail Setting up connection to: %s %d  \r\n", __FILE__, __func__, ipAddress, (int) port);      
       singleConnection.pCon->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
       singleConnection.pCon->proto.tcp->local_port = espconn_port();
       singleConnection.pCon->proto.tcp->remote_port = port;
@@ -193,10 +197,10 @@ void TcpSend(espTypes type, char * ipAddress, int32_t port, char * cmd) {
       espconn_regist_connectcb(singleConnection.pCon, TcpClient_Connect_Cb);
       espconn_regist_reconcb(singleConnection.pCon, TcpClient_Reconnect_Cb);
       if((ip == 0xffffffff) && (os_memcmp(ipTemp,"255.255.255.255",16) != 0))  {
-        os_printf("DEBUG Troubles with ip, going to resolve... to:  %s \r\n",ipAddress);
+        os_printf("-%s-%s Troubles with ip, going to resolve... to:: %s \r\n", __FILE__, __func__, ipAddress);      
         espconn_gethostbyname(singleConnection.pCon, ipAddress, &host_ip, TcpClient_Dns_Cb);
       } else  {
-        os_printf("DEBUG Connecting... to: %s \r\n", ipAddress);
+        os_printf("-%s-%sConnecting to: %s \r\n", __FILE__, __func__, ipAddress);      
         espconn_connect(singleConnection.pCon);
       }
     break;

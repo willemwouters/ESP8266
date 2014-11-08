@@ -14,6 +14,8 @@
 void ICACHE_FLASH_ATTR tplTcpRequest(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
 	static struct station_config stconf;
+		os_printf("-%s-%s \r\n", __FILE__, __func__);
+
 	if (token==NULL) return;
 	wifi_station_get_config(&stconf);
 	os_strcpy(buff, "Unknown");
@@ -95,8 +97,7 @@ int ICACHE_FLASH_ATTR cgiTcpRequest(HttpdConnData *connData) {
 		// cmdp = str_replace((char*) cmd, "%0A", "\n");
 
 	//cmd = str_replace((char*) cmd, "%2f", "/");
-
-	os_printf("DEBUG Sending to: \r\n%s %d %s--- \r\n", ip, atoi(port), cmdp );
+   	os_printf("-%s-%s Sending to:%s %d %s\r\n", __FILE__, __func__, ip, atoi(port), cmdp);
 	//TcpSend(TCP, "192.168.178.1", 80, "GET / HTTP/1.0\r\n\r\n");
 	TcpSend(TCP, ip, atoi(port),  cmd);
 
@@ -114,6 +115,8 @@ int ICACHE_FLASH_ATTR cgiTcpResponse(HttpdConnData *connData) {
 	httpdHeader(connData, "Content-Type", "text/html");
 	httpdEndHeaders(connData);
 	len=os_sprintf(buff, "{\n \"result\": { \n\"inProgress\": \"1\"\n }\n}\n");
+	os_printf("-%s-%s response: %s \r\n", __FILE__, __func__, buff);		
+	
 	espconn_sent(connData->conn, (uint8 *)buff, len);
 	return HTTPD_CGI_DONE;
 }
