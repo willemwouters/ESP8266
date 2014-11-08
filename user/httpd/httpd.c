@@ -57,6 +57,7 @@ typedef struct {
 static const MimeMap mimeTypes[]={
 	{"htm", "text/htm"},
 	{"html", "text/html"},
+	{"push", "text/event-stream"},
 	{"js", "text/javascript"},
 	{"txt", "text/plain"},
 	{"jpg", "image/jpeg"},
@@ -196,21 +197,77 @@ int ICACHE_FLASH_ATTR cgiRedirect(HttpdConnData *connData) {
 }
 
 
-static void ICACHE_FLASH_ATTR httpdSentCb(void *arg) {
+	//static int pushTimerTimeoutCounter = 0;
+
+//This routine is ran some time after a connection attempt to an access point. If
+//the connect succeeds, this gets the module in STA-only mode.
+static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
+	HttpdConnData *conn= (HttpdConnData *) arg;
+	
+
+	//if(pushTimerTimeoutCounter == 30) {
+	
+		os_printf("Disconnecting the Push Tcp Stream\n");
+		httpdRetireConn(conn);
+		espconn_regist_time(conn->conn, 1, 0); // needs to be reset
+		espconn_disconnect(conn->conn);
+		//pushTimerTimeoutCounter = 0;
+	//}
+
+	//os_timer_arm(&resetTimerPush, 1000, 0);
+	//pushTimerTimeoutCounter++;
+}
+
+ void ICACHE_FLASH_ATTR httpdPushMessage(char * url , char * message) {
+	//See if the url is somewhere in our internal url table.
+	char dataRaw[256];
+	os_sprintf(dataRaw,"data: %s\n\n", message);
+	os_printf("Sending out a pushmessage:%s---\r\n", dataRaw);
+
+	int i;
+
+	for (i=0; i<MAX_CONN; i++) {
+		HttpdConnData * conn = &connData[i];
+
+		if (conn!=NULL && conn->url != NULL) {
+
+			if(os_strcmp(httpdGetMimetype(conn->url), "text/event-stream") == 0 &&  os_strcmp(conn->url, url) == 0) {
+			os_printf("Send push Message to: %s-%s-\r\n", conn->url, dataRaw);
+			httpdStartResponse(connData, 200);
+			httpdHeader(connData, "Content-Type", httpdGetMimetype(connData->url));
+	
+			espconn_sent(conn->conn, (uint8 *)dataRaw, os_strlen(dataRaw));
+			}
+		}
+	}
+}
+#define PUSHCONNECTION_TIMEOUT 60
+ void ICACHE_FLASH_ATTR httpdSentCb(void *arg) {
 	int r;
 	HttpdConnData *conn=httpdFindConnData(arg);
+	static ETSTimer resetTimerPush;
 //	os_printf("Sent callback on conn %p\n", conn);
 	if (conn==NULL) return;
 	if (conn->cgi==NULL) { //Marked for destruction?
-		os_printf("Conn %p is done. Closing.\n", conn->conn);
-		espconn_disconnect(conn->conn);
-		httpdRetireConn(conn);
+		if(os_strcmp(httpdGetMimetype(conn->url), "text/event-stream") == 0) {
+			os_timer_disarm(&resetTimerPush);
+			os_timer_setfn(&resetTimerPush, disconnectPushTimerCb, conn);
+			os_printf("Conn %p is done. push stream, wait 60 sec Closing: %s .\n", conn->conn, conn->url);
+			os_timer_arm(&resetTimerPush, PUSHCONNECTION_TIMEOUT * 1000, 0);
+			espconn_regist_time(conn->conn, PUSHCONNECTION_TIMEOUT, 0);
+
+		} else {
+			espconn_regist_time(conn->conn, 1, 0);  // needs to be reset
+			os_printf("Conn %p is done. cgi page Closing: %s.\n", conn->conn, conn->url);
+			espconn_disconnect(conn->conn);
+			httpdRetireConn(conn);
+		}
 		return;
 	}
 
 	r=conn->cgi(conn); //Execute cgi fn.
 	if (r==HTTPD_CGI_DONE) {
-		conn->cgi=NULL; //mark for destruction.
+		conn->cgi=NULL; //mark for destruction. BUT ONLY IF IT ALREADY SEND SOMETHING
 	}
 }
 
@@ -228,6 +285,7 @@ static void ICACHE_FLASH_ATTR httpdSendResp(HttpdConnData *conn) {
 			conn->cgi=builtInUrls[i].cgiCb;
 			conn->cgiArg=builtInUrls[i].cgiArg;
 			r=conn->cgi(conn);
+			
 			if (r!=HTTPD_CGI_NOTFOUND) {
 				if (r==HTTPD_CGI_DONE) conn->cgi=NULL;  //If cgi finishes immediately: mark conn for destruction.
 				return;
@@ -392,7 +450,6 @@ void ICACHE_FLASH_ATTR httpdInit(HttpdBuiltInUrl *fixedUrls, int port) {
 	httpdTcp.local_port=port;
 	httpdConn.proto.tcp=&httpdTcp;
 	builtInUrls=fixedUrls;
-
 	os_printf("Httpd init, conn=%p\n", &httpdConn);
 	espconn_regist_connectcb(&httpdConn, httpdConnectCb);
 	espconn_accept(&httpdConn);

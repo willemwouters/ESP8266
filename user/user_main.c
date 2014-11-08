@@ -8,6 +8,8 @@
 #include "cgi-src/wifi/wifi_tpl.h"
 #include "cgi-src/wifi/status_tpl.h"
 #include "cgi-src/tcp/tcprequest_cgi.h"
+#include "cgi-src/push/listen_push.h"
+#include "cgi-src/push/index_tpl.h"
 #include "cgi-src/tcp/serverconfig_tpl.h"
 #include "cgi-src/tcp/serverstatus_tpl.h"
 #include "tty/stdout.h"
@@ -22,6 +24,10 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/wifi/WiFiScan.cgi", cgiWiFiScan, NULL},
 	{"/wifi/WiFiConnect.cgi", cgiWiFiConnect},
 	{"/wifi/WiFiApSave.cgi", cgiWiFiApSave},
+
+	{"/push/listen.push", cgiPushListen},
+	{"/push/index.push", cgiEspFsTemplate, tplPushIndex},
+	{"/push/index.cgi", cgiPushIndexRequest},
 
 	{"/tcp/request.tpl", cgiEspFsTemplate, tplTcpRequest},
 	{"/tcp/serverconfig.tpl", cgiEspFsTemplate, tplTcpServerConfig},

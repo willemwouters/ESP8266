@@ -13,6 +13,8 @@ void ICACHE_FLASH_ATTR tplTcpServerStatus(HttpdConnData *connData, char *token, 
 	char buff[1024];
 	//int x;
 	static struct station_config stconf;
+
+
 	if (token==NULL) return;
 	wifi_station_get_config(&stconf);
 
@@ -23,7 +25,6 @@ void ICACHE_FLASH_ATTR tplTcpServerStatus(HttpdConnData *connData, char *token, 
 		GetIpSettings(ipSettings);
 		os_strcpy(buff, ipSettings);
 		//delete ipSettings;
-		
 	}
 	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));
 }
