@@ -25,10 +25,15 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/wifi/WiFiConnect.cgi", cgiWiFiConnect},
 	{"/wifi/WiFiApSave.cgi", cgiWiFiApSave},
 
+	{"/push", cgiRedirect, "/push/index.tpl"},
+	{"/push/", cgiRedirect, "/push/index.tpl"},
 	{"/push/listen.push", cgiPushListen},
-	{"/push/index.push", cgiEspFsTemplate, tplPushIndex},
+	{"/push/io.push", cgiEspFsTemplate, tplPushIndex},
+	{"/push/index.tpl", cgiEspFsTemplate, tplPushIndex},
 	{"/push/index.cgi", cgiPushIndexRequest},
 
+	{"/tcp", cgiRedirect, "/tcp/request.tpl"},
+	{"/tcp/", cgiRedirect, "/tcp/request.tpl"},
 	{"/tcp/request.tpl", cgiEspFsTemplate, tplTcpRequest},
 	{"/tcp/serverconfig.tpl", cgiEspFsTemplate, tplTcpServerConfig},
 	{"/tcp/TcpServerSave.cgi", cgiTcpServerSave},

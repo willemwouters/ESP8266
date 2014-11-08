@@ -32,7 +32,8 @@ window.onload=function(e) {
 		<li><a href="/wifi/status.tpl">WIFI - Status</a></li>
 		<li><a href="/tcp/request.tpl">TCP Server - HTTP Request</a></li>
 		<li><a href="/tcp/serverconfig.tpl">TCP Server - Config</a></li>
-		<li><a href="/wifi/serverstatus.tpl">TCP Server - Status</a></li>
+		<li><a href="/tcp/serverstatus.tpl">TCP Server - Status</a></li>
+		<li><a href="/push/index.tpl">HTML5 Push examples IO</a></li>
 	</ul>
 </div>
 
