@@ -69,11 +69,39 @@ int ICACHE_FLASH_ATTR cgiEspFsHook(HttpdConnData *connData) {
 typedef struct {
 	EspFsFile *file;
 	void *tplArg;
-	char token[64];
-	int tokenPos;
+	char tokenTpl[64];
+	char tokenInclude[64];
+	int tokenTplPos;
+	int tokenIncludePos;
+
 } TplData;
 
 typedef void (* TplCallback)(HttpdConnData *connData, char *token, void **arg);
+
+
+int ICACHE_FLASH_ATTR cgiEspIncludeFsTemplate(HttpdConnData *connData, char * fileName) {
+	
+	//TplData *tpd=connData->cgiData;
+	int len;
+	// int x, sp=0;
+	//int sp=0;
+	//char *e=NULL;
+	char buff[1025];
+	EspFsFile *file = espFsOpen(fileName);
+	len=espFsRead(file, buff, 1024);
+	os_printf("reading: fileName: %s %s \r\n", fileName, buff);
+	
+	if (len!=0) espconn_sent(connData->conn, (uint8 *)buff, len);
+	//if (len!=1024) {
+		//We're done.
+		espFsClose(file);
+		return HTTPD_CGI_DONE;
+	//} else {
+		//Ok, till next time.
+	//	return HTTPD_CGI_MORE;
+	//}
+}
+
 
 int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 	TplData *tpd=connData->cgiData;
@@ -93,9 +121,13 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 	if (tpd==NULL) {
 		//First call to this cgi. Open the file so we can read it.
 		tpd=(TplData *)os_malloc(sizeof(TplData));
+								os_printf("Opening file %s \r\n", connData->url);
+
 		tpd->file=espFsOpen(connData->url);
 		tpd->tplArg=NULL;
-		tpd->tokenPos=-1;
+		tpd->tokenTplPos=-1;
+		tpd->tokenIncludePos=-1;
+
 		if (tpd->file==NULL) {
 			return HTTPD_CGI_NOTFOUND;
 		}
@@ -111,34 +143,54 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 		sp=0;
 		e=buff;
 		for (x=0; x<len; x++) {
-			if (tpd->tokenPos==-1) {
+			if (tpd->tokenTplPos==-1 && tpd->tokenIncludePos==-1) {
 				//Inside ordinary text.
 				if (buff[x]=='%') {
 					//Send raw data up to now
 					if (sp!=0) espconn_sent(connData->conn, (uint8 *)e, sp);
 					sp=0;
 					//Go collect token chars.
-					tpd->tokenPos=0;
+					tpd->tokenTplPos=0;
+				} else 	if (buff[x]=='@') {
+					//Send raw data up to now
+					if (sp!=0) espconn_sent(connData->conn, (uint8 *)e, sp);
+					sp=0;
+						os_printf("found token \r\n");
+
+					//Go collect token chars.
+					tpd->tokenIncludePos=0;
 				} else {
 					sp++;
 				}
 			} else {
-				if (buff[x]=='%') {
-					tpd->token[tpd->tokenPos++]=0; //zero-terminate token
-					((TplCallback)(connData->cgiArg))(connData, tpd->token, &tpd->tplArg);
+				if (buff[x]=='@') {
+					tpd->tokenInclude[tpd->tokenIncludePos++]=0; //zero-terminate token
+						os_printf("found token:  %s \r\n", tpd->tokenInclude);
+
+					 cgiEspIncludeFsTemplate(connData, tpd->tokenInclude);
 					//Go collect normal chars again.
 					e=&buff[x+1];
-					tpd->tokenPos=-1;
+					tpd->tokenIncludePos=-1;
+				} else if(buff[x]=='%') {
+					tpd->tokenTpl[tpd->tokenTplPos++]=0; //zero-terminate token
+					((TplCallback)(connData->cgiArg))(connData, tpd->tokenTpl, &tpd->tplArg);
+					//Go collect normal chars again.
+					e=&buff[x+1];
+					tpd->tokenTplPos=-1;
 				} else {
-					if (tpd->tokenPos<(sizeof(tpd->token)-1)) tpd->token[tpd->tokenPos++]=buff[x];
+					if (tpd->tokenIncludePos<(sizeof(tpd->tokenInclude)-1)) tpd->tokenInclude[tpd->tokenIncludePos++]=buff[x];
+					if (tpd->tokenTplPos<(sizeof(tpd->tokenTpl)-1)) tpd->tokenTpl[tpd->tokenTplPos++]=buff[x];
 				}
 			}
 		}
 	}
+	os_printf("Send remaining bit.:  %s %d \r\n", e, sp);
+
 	//Send remaining bit.
 	if (sp!=0) espconn_sent(connData->conn, (uint8 *)e, sp);
 	if (len!=1024) {
 		//We're done.
+		if(tpd->tplArg != NULL)
 		((TplCallback)(connData->cgiArg))(connData, NULL, &tpd->tplArg);
 		espFsClose(tpd->file);
 		return HTTPD_CGI_DONE;

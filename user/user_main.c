@@ -43,6 +43,7 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/tcp/TcpResponse.cgi", cgiTcpResponse, NULL},
 	{"/tcp/TcpRequest.cgi", cgiTcpRequest},
 
+	{"/index.tpl", cgiEspFsTemplate, NULL},
 
 	{"*", cgiEspFsHook, NULL}, //Catch-all cgi function for the filesystem
 	{NULL, NULL, NULL}
