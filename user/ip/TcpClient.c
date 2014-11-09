@@ -200,7 +200,7 @@ void TcpSend(espTypes type, char * ipAddress, int32_t port, char * cmd) {
         os_printf("-%s-%s Troubles with ip, going to resolve... to:: %s \r\n", __FILE__, __func__, ipAddress);      
         espconn_gethostbyname(singleConnection.pCon, ipAddress, &host_ip, TcpClient_Dns_Cb);
       } else  {
-        os_printf("-%s-%sConnecting to: %s \r\n", __FILE__, __func__, ipAddress);      
+        os_printf("-%s-%s Connecting to: %s \r\n", __FILE__, __func__, ipAddress);      
         espconn_connect(singleConnection.pCon);
       }
     break;

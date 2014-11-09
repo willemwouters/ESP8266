@@ -4,6 +4,7 @@
 #include "httpd/httpd.h"
 #include "io/io.h"
 #include "httpd/httpdespfs.h"
+#include "user_interface.h"
 #include "cgi-src/wifi/wifi_cgi.h"
 #include "cgi-src/wifi/wifi_tpl.h"
 #include "cgi-src/wifi/status_tpl.h"
@@ -54,13 +55,39 @@ HttpdBuiltInUrl builtInUrls[]={
 	{NULL, NULL, NULL}
 };
 
+static ETSTimer resetTimer;
+
+void mainUser(void * arg) {
+		os_timer_disarm(&resetTimer);
+		os_timer_setfn(&resetTimer, mainUser, NULL);
+		//os_printf("-%s-%s  main loop \r\n", __FILE__, __func__);
+		os_timer_arm(&resetTimer, 1000, 0);
+}
+
+void WifiConnectCb(void* arg) {
+	int x=wifi_station_get_connect_status();
+	if (x==STATION_GOT_IP) {
+		os_printf("-%s-%s Got an ip\r\n", __FILE__, __func__);
+		os_timer_disarm(&resetTimer);
+		os_timer_setfn(&resetTimer, mainUser, NULL);
+		os_printf("-%s-%s  Main loop starting. \r\n", __FILE__, __func__);
+		os_timer_arm(&resetTimer, 1000, 0);
+	} else {
+		os_timer_disarm(&resetTimer);
+		os_timer_setfn(&resetTimer, WifiConnectCb, NULL);
+		os_printf("-%s-%s  Schedules a reset \r\n", __FILE__, __func__);
+		os_timer_arm(&resetTimer, 4000, 0);
+	}
+}
 
 void user_init(void) {
-	
 	stdoutInit();
 	ioInit();
 	httpdInit(builtInUrls, 80);
-
-	os_printf("\nReady\n");
+	os_timer_disarm(&resetTimer);
+	os_timer_setfn(&resetTimer, WifiConnectCb, NULL);
+	os_printf("-%s-%s Schedule main loop after Wifi connect \r\n", __FILE__, __func__);
+	os_timer_arm(&resetTimer, 4000, 0);
+	os_printf("\nReady \n");
 }
 

@@ -74,13 +74,13 @@ GetWifiConfig(char * data)
   os_printf("-%s-%s \r\n", __FILE__, __func__); 
   wifi_station_get_config(&stationConfig);
   wifi_softap_get_config(&apConfig);
-  os_sprintf(data, "DEBUG \"%s\",\"%s\",%d,%d <br />\r\n",
+  os_sprintf(data, " \"%s\",\"%s\",%d,%d <br />\r\n",
              apConfig.ssid,
              apConfig.password,
              apConfig.channel,
              apConfig.authmode);
 
-  os_sprintf(data, "%sDEBUG \"%s\",\"%s\"<br />\r\n",
+  os_sprintf(data, "%s \"%s\",\"%s\"<br />\r\n",
              data,
              stationConfig.ssid,
              stationConfig.password);

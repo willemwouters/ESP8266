@@ -217,7 +217,8 @@ at_udpserver_recv(void *arg, char *pusrdata, unsigned short len)
     //mdState = m_linked;
     at_linkNum++;
     pespconn->reverse = &pLink[i];
-    os_printf("Link\r\n");
+    os_printf("-%s-%s Link \r\n", __FILE__, __func__);      
+
   }
   linkTemp = (espServerConnectionType *)pespconn->reverse;
   if(pusrdata == NULL)

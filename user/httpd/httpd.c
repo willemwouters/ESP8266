@@ -29,7 +29,7 @@
 //Max post buffer len
 #define MAX_POST 1024
 
-#define PUSHCONNECTION_TIMEOUT 720
+#define PUSHCONNECTION_TIMEOUT 30
 
 //This gets set at init time.
 static HttpdBuiltInUrl *builtInUrls;
@@ -44,6 +44,8 @@ struct HttpdPriv {
 //Connection pool
 static HttpdPriv connPrivData[MAX_CONN];
 static HttpdConnData connData[MAX_CONN];
+
+
 
 static struct espconn httpdConn;
 static esp_tcp httpdTcp;
@@ -209,9 +211,11 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 
 	//if(pushTimerTimeoutCounter == 30) {
 		os_printf("-%s-%s Disconnecting the Push Tcp Stream\r\n", __FILE__, __func__);	
-		httpdRetireConn(conn);
+		os_printf("-%s-%s Set stream timeout to: %d on conn %p\r\n", __FILE__, __func__,  1, conn->conn);	
 		espconn_regist_time(conn->conn, 1, 0); // needs to be reset
 		espconn_disconnect(conn->conn);
+		httpdRetireConn(conn);
+
 		//pushTimerTimeoutCounter = 0;
 	//}
 
@@ -222,7 +226,7 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
  void ICACHE_FLASH_ATTR httpdPushMessage(char * url , char * message) {
 	//See if the url is somewhere in our internal url table.
 	char dataRaw[256];
-	os_sprintf(dataRaw,"data: %s\n\n", message);
+	os_sprintf(dataRaw,"retry: 10\ndata: %s\n\n", message);
 	//os_printf("Sending out a pushmessage:%s---\r\n", dataRaw);
 
 	int i;
@@ -248,17 +252,21 @@ static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 	int r;
 	HttpdConnData *conn=httpdFindConnData(arg);
 	static ETSTimer resetTimerPush;
-//	os_printf("Sent callback on conn %p\n", conn);
 	if (conn==NULL) return;
 	if (conn->cgi==NULL) { //Marked for destruction?
+		if(os_strcmp(conn->url, "/push/console.push") != 0) {
+				os_printf("-%s-%s \r\n", __FILE__, __func__);		
+		}
 		if(os_strcmp(httpdGetMimetype(conn->url), "text/event-stream") == 0) {
-			os_timer_disarm(&resetTimerPush);
-			os_timer_setfn(&resetTimerPush, disconnectPushTimerCb, conn);
-			//os_printf("espconn %s-%s Conn %p is done. push stream, wait %d sec Closing: %s\r\n", __FILE__, __func__,  conn->conn, PUSHCONNECTION_TIMEOUT,  conn->url);	
-			os_timer_arm(&resetTimerPush, PUSHCONNECTION_TIMEOUT * 1000, 0);
-			espconn_regist_time(conn->conn, PUSHCONNECTION_TIMEOUT, 0);
-
+				os_timer_disarm(&resetTimerPush);
+				os_timer_setfn(&resetTimerPush, disconnectPushTimerCb, conn);
+				os_timer_arm(&resetTimerPush, PUSHCONNECTION_TIMEOUT * 1000, 0);
+				if(os_strcmp(conn->url, "/push/console.push") != 0) {
+					os_printf("-%s-%s Set stream timeout to: %d on conn %p\r\n", __FILE__, __func__, PUSHCONNECTION_TIMEOUT, conn->conn);		
+				}
+				espconn_regist_time(conn->conn, PUSHCONNECTION_TIMEOUT, 0);
 		} else {
+			os_printf("-%s-%s Set stream timeout to: %d on conn %p\r\n", __FILE__, __func__, 1, conn->conn);		
 			espconn_regist_time(conn->conn, 1, 0);  // needs to be reset
 			os_printf("-%s-%s Conn %p is done. cgi page Closing: %s.\r\n", __FILE__, __func__,  conn->conn, conn->url);	
 			espconn_disconnect(conn->conn);
@@ -393,16 +401,6 @@ static void ICACHE_FLASH_ATTR httpdReconCb(void *arg, sint8 err) {
 }
 
 static void ICACHE_FLASH_ATTR httpdDisconCb(void *arg) {
-#if 0
-	//Stupid esp sdk passes through wrong arg here, namely the one of the *listening* socket.
-	//If it ever gets fixed, be sure to update the code in this snippet; it's probably out-of-date.
-	HttpdConnData *conn=httpdFindConnData(arg);
-	os_printf("Disconnected, conn=%p\n", conn);
-	if (conn==NULL) return;
-	conn->conn=NULL;
-	if (conn->cgi!=NULL) conn->cgi(conn); //flush cgi data
-#endif
-	//Just look at all the sockets and kill the slot if needed.
 	int i;
 	for (i=0; i<MAX_CONN; i++) {
 		if (connData[i].conn!=NULL) {
@@ -421,12 +419,10 @@ static void ICACHE_FLASH_ATTR httpdConnectCb(void *arg) {
 	int i;
 	//Find empty conndata in pool
 	for (i=0; i<MAX_CONN; i++) if (connData[i].conn==NULL) break;
-	//os_printf("espconn %s-%s Con req, conn=%p, pool slot %d\r\n", __FILE__, __func__, conn, i);		
-		
-
+	os_printf("espconn %s-%s Con req, conn=%p, pool slot %d\r\n", __FILE__, __func__, conn, i);		
 	connData[i].priv=&connPrivData[i];
 	if (i==MAX_CONN) {
-		os_printf("-%s-%sAiee, conn pool overflow\r\n", __FILE__, __func__);
+		os_printf("-%s-%s Conn pool overflow\r\n", __FILE__, __func__);
 		espconn_disconnect(conn);
 		return;
 	}
