@@ -28,7 +28,6 @@ LOCAL struct single_key_param *single_key[PLUG_KEY_NUM];
 #define PLUG_KEY_0_IO_FUNC    FUNC_GPIO0
 
 
-
 //This cgi is when opening push index
 int ICACHE_FLASH_ATTR cgiPushIndexRequest(HttpdConnData *connData) {
 	char text[128];
@@ -44,8 +43,6 @@ LOCAL void ICACHE_FLASH_ATTR user_plug_short_press(void)
 	char * msg = "{ \"GPIO0\": \"SHORT PRESS\" }" ;
    	os_printf("-%s-%s \r\n", __FILE__, __func__);
 	httpdPushMessage("/push/io.push", msg);
-
-
 }
 
 LOCAL void ICACHE_FLASH_ATTR user_plug_long_press(void)
@@ -55,15 +52,14 @@ LOCAL void ICACHE_FLASH_ATTR user_plug_long_press(void)
 	httpdPushMessage("/push/io.push", msg);
 }
 
-
 void initIntGpio() {
    	os_printf("-%s-%s \r\n", __FILE__, __func__);
 
 	single_key[0] = key_init_single(PLUG_KEY_0_IO_NUM, PLUG_KEY_0_IO_MUX, PLUG_KEY_0_IO_FUNC,
-                                    user_plug_long_press, user_plug_short_press);
+                                    user_plug_long_press, user_plug_short_press, 50, 1000);
 
 // single_key[1] = key_init_single(PLUG_KEY_2_IO_NUM, PLUG_KEY_2_IO_MUX, PLUG_KEY_2_IO_FUNC,
-//                                     user_plug_long_press, user_plug_short_press);
+//                                     user_plug_long_press, user_plug_short_press, 50, 1000);
     keys.key_num = PLUG_KEY_NUM;
     keys.single_key = single_key;
 

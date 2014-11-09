@@ -32,20 +32,6 @@ void ICACHE_FLASH_ATTR ioLed(int ena) {
 	}
 }
 
-// static void ICACHE_FLASH_ATTR resetBtnTimerCb(void *arg) {
-// 	static int resetCnt=0;
-// 	if (!GPIO_INPUT_GET(BTNGPIO)) {
-// 		resetCnt++;
-// 	} else {
-// 		if (resetCnt>=6) { //3 sec pressed
-// 			wifi_station_disconnect();
-// 			wifi_set_opmode(0x3); //reset to AP+STA mode
-// 			os_printf("Reset to AP mode. Restarting system...\n");
-// 			system_restart();
-// 		}
-// 		resetCnt=0;
-// 	}
-// }
 
 void ioInit() {
 	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
