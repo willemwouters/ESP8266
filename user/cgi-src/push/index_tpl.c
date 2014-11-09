@@ -75,8 +75,6 @@ void ICACHE_FLASH_ATTR tplPushIndex(HttpdConnData *connData, char *token, void *
 	char buff[1024];
    	os_printf("-%s-%s \r\n", __FILE__, __func__);
 
-   // ETS_GPIO_INTR_ATTACH (func, arg) 
-   // ETS_GPIO_INTR_ATTACH (func, arg) 
 	initIntGpio();
 	if (token==NULL) return;
 	int i = GPIO_INPUT_GET(BIT0);

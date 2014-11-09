@@ -152,7 +152,6 @@ static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 	int x;
 	static ETSTimer resetTimer;
 	os_printf("-%s-%s Trying to connect to Ap\r\n", __FILE__, __func__);
-
 	wifi_station_disconnect();
 	wifi_station_set_config(&stconf);
 	wifi_station_connect();
@@ -167,35 +166,21 @@ static void ICACHE_FLASH_ATTR reassTimerCb(void *arg) {
 	}
 }
 
-
-
-
-
 //This cgi uses the routines above to POST save AP settings
 int ICACHE_FLASH_ATTR cgiWiFiApSave(HttpdConnData *connData) {
 	char ssid[128];
 	char password[128];
-	//static ETSTimer reassTimer;
-			os_printf("-%s-%s  \r\n", __FILE__, __func__);
-
+	os_printf("-%s-%s  \r\n", __FILE__, __func__);
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
 	}
-	
 	wifi_softap_get_config(&apconf);
-
 	httpdFindArg(connData->postBuff, "ssid", ssid, sizeof(ssid));
 	httpdFindArg(connData->postBuff, "password", password, sizeof(password));
-
 	os_strncpy((char*)apconf.ssid, ssid, 32);
 	os_strncpy((char*)apconf.password, password, 64);
-
 	wifi_softap_set_config(&apconf);
-	//Schedule disconnect/connect
-	// os_timer_disarm(&reassTimer);
-	// os_timer_setfn(&reassTimer, reassTimerCb, NULL);
-	// os_timer_arm(&reassTimer, 1000, 0);
 	httpdRedirect(connData, "/wifi/wifi.tpl");
 	return HTTPD_CGI_DONE;
 }
@@ -208,15 +193,12 @@ int ICACHE_FLASH_ATTR cgiWiFiConnect(HttpdConnData *connData) {
 	char passwd[128];
 	static ETSTimer reassTimer;
 	os_printf("-%s-%s  \r\n", __FILE__, __func__);
-
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
 	}
-	
 	httpdFindArg(connData->postBuff, "essid", essid, sizeof(essid));
 	httpdFindArg(connData->postBuff, "passwd", passwd, sizeof(passwd));
-
 	os_strncpy((char*)stconf.ssid, essid, 32);
 	os_strncpy((char*)stconf.password, passwd, 64);
 

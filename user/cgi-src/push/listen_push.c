@@ -8,7 +8,6 @@
 #include "wifi/WifiUtility.h"
 
 //This cgi is when initial connection is setup with push example page   listen.push
-
 int ICACHE_FLASH_ATTR cgiPushListen(HttpdConnData *connData) {
 	char * msg = "data: connection opened\n\n";
 	os_printf("-%s-%s \r\n", __FILE__, __func__);

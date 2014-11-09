@@ -14,17 +14,13 @@
 void ICACHE_FLASH_ATTR tplTcpRequest(HttpdConnData *connData, char *token, void **arg) {
 	char buff[1024];
 	static struct station_config stconf;
-		os_printf("-%s-%s \r\n", __FILE__, __func__);
-
+	os_printf("-%s-%s \r\n", __FILE__, __func__);
 	if (token==NULL) return;
 	wifi_station_get_config(&stconf);
 	os_strcpy(buff, "Unknown");
 	if (os_strcmp(token, "WiFiMode")==0) {
-		
-		
 		os_strcpy(buff, "GET / HTTP/1.1\r\nCache-Control: max-age=3600\r\nUser-Agent: esp8266\r\n\r\n");
 	}
-	
 	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));
 }
 
@@ -80,34 +76,16 @@ int ICACHE_FLASH_ATTR cgiTcpRequest(HttpdConnData *connData) {
 	char cmd[128];
 	char *cmdp;
 	os_memset(cmd, 0, 128);
-	//	os_memset(cmdp, 0, 128);
-
-	// if (connData->conn==NULL) {
-	// 	//Connection aborted. Clean up.
-	// 	return HTTPD_CGI_DONE;
-	// }
-
-	//wifi_softap_get_config(&apconf);
-
 	httpdFindArg(connData->postBuff, "ip", ip, sizeof(ip));
 	httpdFindArg(connData->postBuff, "port", port, sizeof(port));
 	httpdFindArg(connData->postBuff, "cmd", cmd, sizeof(cmd));
 	cmdp = str_replace((char*) cmd, "+", " ");
-		// cmdp = str_replace((char*) cmd, "%0D", "\r");
-		// cmdp = str_replace((char*) cmd, "%0A", "\n");
-
-	//cmd = str_replace((char*) cmd, "%2f", "/");
    	os_printf("-%s-%s Sending to:%s %d %s\r\n", __FILE__, __func__, ip, atoi(port), cmdp);
-	//TcpSend(TCP, "192.168.178.1", 80, "GET / HTTP/1.0\r\n\r\n");
 	TcpSend(TCP, ip, atoi(port),  cmd);
-
 	httpdRedirect(connData, "/tcp/request.tpl");
 	return HTTPD_CGI_DONE;
 }
 
-//This CGI is called from the bit of AJAX-code in wifi.tpl. It will initiate a
-//scan for access points and if available will return the result of an earlier scan.
-//The result is embedded in a bit of JSON parsed by the javascript in wifi.tpl.
 int ICACHE_FLASH_ATTR cgiTcpResponse(HttpdConnData *connData) {
 	int len;
 	char buff[1024];
@@ -116,7 +94,6 @@ int ICACHE_FLASH_ATTR cgiTcpResponse(HttpdConnData *connData) {
 	httpdEndHeaders(connData);
 	len=os_sprintf(buff, "{\n \"result\": { \n\"inProgress\": \"1\"\n }\n}\n");
 	os_printf("-%s-%s response: %s \r\n", __FILE__, __func__, buff);		
-	
 	espconn_sent(connData->conn, (uint8 *)buff, len);
 	return HTTPD_CGI_DONE;
 }

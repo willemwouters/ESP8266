@@ -14,6 +14,7 @@ int GetWifiStatus() {
   int x=wifi_station_get_connect_status();
   return x;
 }
+
 /**
   * @brief  Execution commad of get module ip.
   * @param  id: commad id number
@@ -23,37 +24,21 @@ void ICACHE_FLASH_ATTR
 GetIpConfig(char * data)//add get station ip and ap ip
 {
   struct ip_info pTempIp;
-  //char temp[64];
   os_printf("-%s-%s  Wifi mode 1= %d\r\n", __FILE__, __func__, GetWifiMode());   
   if((GetWifiMode() == 2)||(GetWifiMode() == 3))
   {
-       
-
     wifi_get_ip_info(0x01, &pTempIp);
-    os_sprintf(data, "%d.%d.%d.%d\r\n",
-               IP2STR(&pTempIp.ip));
-  // uart0_sendStr(temp);
-//    mdState = m_gotip; /////////
+    os_sprintf(data, "%d.%d.%d.%d\r\n", IP2STR(&pTempIp.ip));
   }
   if((GetWifiMode() == 1)||(GetWifiMode() == 3))
   {
     wifi_get_ip_info(0x00, &pTempIp);
-    os_sprintf(data, "%s %d.%d.%d.%d\r\n", data, 
-               IP2STR(&pTempIp.ip));
-    //uart0_sendStr(temp);
-//    mdState = m_gotip; /////////
+    os_sprintf(data, "%s %d.%d.%d.%d\r\n", data, IP2STR(&pTempIp.ip));
   }
- // mdState = m_gotip;
- // at_backOk;
 }
 
 
 
-/**
-  * @brief  Query commad of set wifi mode.
-  * @param  id: commad id number
-  * @retval None
-  */
 void ICACHE_FLASH_ATTR
 PrintIpMode()
 {
@@ -61,11 +46,6 @@ PrintIpMode()
   os_printf("-%s-%s   %d\r\n", __FILE__, __func__, at_wifiMode);   
 }
 
-/**
-  * @brief  Query commad of module as wifi ap.
-  * @param  id: commad id number
-  * @retval None
-  */
 void ICACHE_FLASH_ATTR
 GetWifiConfig(char * data)
 {

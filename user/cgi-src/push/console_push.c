@@ -8,7 +8,6 @@
 #include "wifi/WifiUtility.h"
 
 //This cgi is when initial connection is setup with push example page   listen.push
-
 int ICACHE_FLASH_ATTR cgiPushConsole(HttpdConnData *connData) {
 	char * msg = "data: connection opened\n\n";
 	httpdStartResponse(connData, 200);

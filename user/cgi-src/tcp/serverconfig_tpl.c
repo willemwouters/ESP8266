@@ -7,8 +7,6 @@
 
 #include "ip/TcpServer.h"
 
-
-
 //This cgi uses the routines POST save tcp server enable
 int ICACHE_FLASH_ATTR cgiTcpServerEnable(HttpdConnData *connData) {
 	int typeI = 0;
@@ -20,11 +18,9 @@ int ICACHE_FLASH_ATTR cgiTcpServerEnable(HttpdConnData *connData) {
 		typeI = 1;
 	}
 	SetStateServer(typeI);
-
 	httpdRedirect(connData, "/tcp/serverconfig.tpl");
 	return HTTPD_CGI_DONE;
 }
-
 
 //This cgi uses the routines POST save tcp server settings
 int ICACHE_FLASH_ATTR cgiTcpServerSave(HttpdConnData *connData) {
@@ -33,7 +29,6 @@ int ICACHE_FLASH_ATTR cgiTcpServerSave(HttpdConnData *connData) {
 	int typeI  = 3;
 	httpdFindArg(connData->postBuff, "type", type, sizeof(type));
 	httpdFindArg(connData->postBuff, "port", port, sizeof(port));
-	//TcpSend(TCP, ip, atoi(port),  cmd);
 	if(os_strcmp(type, "TCP") == 0) {
 		typeI = 1;
 	}
@@ -42,7 +37,6 @@ int ICACHE_FLASH_ATTR cgiTcpServerSave(HttpdConnData *connData) {
 	}
 	os_printf("-%s-%s Saving tcp settings: type=%d, port=%s\r\n", __FILE__, __func__, typeI, port);
 	SetupServer(1, atoi(port), typeI);
-
 	httpdRedirect(connData, "/tcp/serverconfig.tpl");
 	return HTTPD_CGI_DONE;
 }
@@ -62,11 +56,6 @@ void ICACHE_FLASH_ATTR tplTcpServerConfig(HttpdConnData *connData, char *token, 
 		} else {
 			os_strcpy(buff, "Not Running");
 		}
-		//char ipSettings[256] = { 0};
-		//GetIpSettings(ipSettings);
-		
-		//delete ipSettings;
-		
 	}
 	espconn_sent(connData->conn, (uint8 *)buff, os_strlen(buff));
 }

@@ -8,8 +8,6 @@
  * and you think this stuff is worth it, you can buy me a beer in return. 
  * ----------------------------------------------------------------------------
  */
-
-
 #include "espmissingincludes.h"
 #include "c_types.h"
 #include "user_interface.h"
@@ -44,8 +42,6 @@ struct HttpdPriv {
 //Connection pool
 static HttpdPriv connPrivData[MAX_CONN];
 static HttpdConnData connData[MAX_CONN];
-
-
 
 static struct espconn httpdConn;
 static esp_tcp httpdTcp;
@@ -160,7 +156,6 @@ int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLe
 	return -1; //not found
 }
 
-
 //Start the response headers.
 void ICACHE_FLASH_ATTR httpdStartResponse(HttpdConnData *conn, int code) {
 	char buff[128];
@@ -195,47 +190,29 @@ int ICACHE_FLASH_ATTR cgiRedirect(HttpdConnData *connData) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
 	}
-
 	httpdRedirect(connData, (char*)connData->cgiArg);
 	return HTTPD_CGI_DONE;
 }
-
-
-	//static int pushTimerTimeoutCounter = 0;
 
 //This routine is ran some time after a connection attempt to an access point. If
 //the connect succeeds, this gets the module in STA-only mode.
 static void ICACHE_FLASH_ATTR disconnectPushTimerCb(void *arg) {
 	HttpdConnData *conn= (HttpdConnData *) arg;
-	
-
-	//if(pushTimerTimeoutCounter == 30) {
-		os_printf("-%s-%s Disconnecting the Push Tcp Stream\r\n", __FILE__, __func__);	
-		os_printf("-%s-%s Set stream timeout to: %d on conn %p\r\n", __FILE__, __func__,  1, conn->conn);	
-		espconn_regist_time(conn->conn, 1, 0); // needs to be reset
-		espconn_disconnect(conn->conn);
-		httpdRetireConn(conn);
-
-		//pushTimerTimeoutCounter = 0;
-	//}
-
-	//os_timer_arm(&resetTimerPush, 1000, 0);
-	//pushTimerTimeoutCounter++;
+	os_printf("-%s-%s Disconnecting the Push Tcp Stream\r\n", __FILE__, __func__);	
+	os_printf("-%s-%s Set stream timeout to: %d on conn %p\r\n", __FILE__, __func__,  1, conn->conn);	
+	espconn_regist_time(conn->conn, 1, 0); // needs to be reset
+	espconn_disconnect(conn->conn);
+	httpdRetireConn(conn);
 }
 
  void ICACHE_FLASH_ATTR httpdPushMessage(char * url , char * message) {
 	//See if the url is somewhere in our internal url table.
 	char dataRaw[256];
 	os_sprintf(dataRaw,"retry: 10\ndata: %s\n\n", message);
-	//os_printf("Sending out a pushmessage:%s---\r\n", dataRaw);
-
 	int i;
-
 	for (i=0; i<MAX_CONN; i++) {
 		HttpdConnData * conn = &connData[i];
-
 		if (conn!=NULL && conn->url != NULL) {
-
 			if(os_strcmp(httpdGetMimetype(conn->url), "text/event-stream") == 0 &&  os_strcmp(conn->url, url) == 0) {
 			//os_printf("Send push Message to: %s-%s-\r\n", conn->url, dataRaw);
 			httpdStartResponse(connData, 200);
@@ -288,14 +265,12 @@ static void ICACHE_FLASH_ATTR httpdSendResp(HttpdConnData *conn) {
 	int r;
 	//See if the url is somewhere in our internal url table.
 	while (builtInUrls[i].url!=NULL && conn->url!=NULL) {
-//		os_printf("%s == %s?\n", builtInUrls[i].url, conn->url);
 		if (os_strcmp(builtInUrls[i].url, conn->url)==0 || builtInUrls[i].url[0]=='*') {
 			os_printf("-%s-%s Is url index %d\r\n", __FILE__, __func__, i);	
 			conn->cgiData=NULL;
 			conn->cgi=builtInUrls[i].cgiCb;
 			conn->cgiArg=builtInUrls[i].cgiArg;
 			r=conn->cgi(conn);
-			
 			if (r!=HTTPD_CGI_NOTFOUND) {
 				if (r==HTTPD_CGI_DONE) conn->cgi=NULL;  //If cgi finishes immediately: mark conn for destruction.
 				return;
@@ -314,12 +289,10 @@ static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 //	os_printf("Got header %s\n", h);
 	if (os_strncmp(h, "GET ", 4)==0 || os_strncmp(h, "POST ", 5)==0) {
 		char *e;
-		
 		//Skip past the space after POST/GET
 		i=0;
 		while (h[i]!=' ') i++;
 		conn->url=h+i+1;
-
 		//Figure out end of url.
 		e=(char*)os_strstr(conn->url, " ");
 		if (e==NULL) return; //wtf?
@@ -350,9 +323,7 @@ static void ICACHE_FLASH_ATTR httpdRecvCb(void *arg, char *data, unsigned short 
 	HttpdConnData *conn=httpdFindConnData(arg);
 	if (conn==NULL) return;
 
-
 	for (x=0; x<len; x++) {
-
 		if (conn->priv->headPos!=-1) {
 			//This byte is a header byte.
 			if (conn->priv->headPos!=MAX_HEAD_LEN) conn->priv->head[conn->priv->headPos++]=data[x];
@@ -383,7 +354,7 @@ static void ICACHE_FLASH_ATTR httpdRecvCb(void *arg, char *data, unsigned short 
 				//Received post stuff.
 				conn->postBuff[conn->priv->postPos]=0; //zero-terminate
 				conn->priv->postPos=-1;
-				//os_printf("Post data: %s\n", conn->postBuff);
+				os_printf("-%s-%s Post args = %s\r\n", __FILE__, __func__, conn->postBuff);		
 				//Send the response.
 				httpdSendResp(conn);
 				return;
@@ -395,9 +366,7 @@ static void ICACHE_FLASH_ATTR httpdRecvCb(void *arg, char *data, unsigned short 
 static void ICACHE_FLASH_ATTR httpdReconCb(void *arg, sint8 err) {
 	HttpdConnData *conn=httpdFindConnData(arg);
 	os_printf("-%s-%s \r\n", __FILE__, __func__);		
-
 	if (conn==NULL) return;
-	//Yeah... No idea what to do here. ToDo: figure something out.
 }
 
 static void ICACHE_FLASH_ATTR httpdDisconCb(void *arg) {
