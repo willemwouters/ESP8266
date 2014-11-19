@@ -1,0 +1,98 @@
+
+body {
+	background-color: #404040;
+	font-family: sans-serif;
+}
+
+#main {
+	background-color: #999999;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	border: 2px solid #000000;
+	margin: 10px;
+	padding: 10px;
+	display:block;
+	position:relative;
+	float:left;
+}
+
+#menu ul li {
+	list-style-type: none;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+a:visited {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:active {
+    text-decoration: underline;
+}
+
+#menu ul li a {
+	text-decoration: none;
+	color:black;
+}
+#menu ul  {
+	padding:0px;
+}
+#menu {
+	background-color: #999999;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
+	border: 2px solid #000000;
+	margin: 10px;
+	width: auto;
+	padding:10px;
+}
+
+
+@media only screen and (max-device-width : 1000px) {
+  div#menu li {
+     font-size: 40px;
+	clear:both;
+  	float:none;
+  }
+   div#menu {
+      width: 100%;
+	clear:both;
+  	float:none;
+   }
+ 
+  div#menu ul li{
+  	font-size: 40px;
+  	font-weight:600;
+  }
+  div#main {
+  	font-size: 40px;
+  	clear:both;
+  	float:none;
+  	 width: 100%;
+  }
+  input {
+  	font-size:55px;
+  }
+  input[type="radio"] {
+  	border: 0px;
+    width: 30px;
+    height: 1.5em;
+  }
+}
+
+@media only screen and (min-device-width : 1000px) {
+  div#menu {
+	float:left;
+ }
+  div#main {
+  	width:800px;
+  }
+}
