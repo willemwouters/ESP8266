@@ -92,8 +92,7 @@ void WifiConnectCb(void* arg) {
 			noIpTimer = 0;
 			//apconf.ssid_hidden = 0;
 			wifi_softap_set_config(&apconf);
-			wifi_set_opmode(3);
-
+			//wifi_set_opmode(3);
 			system_restart();
 		}
 	}
@@ -101,6 +100,7 @@ void WifiConnectCb(void* arg) {
 
 
 void user_init(void) {
+	wifi_set_opmode(3);
 	stdoutInit();
 	httpdInit(builtInUrls, 80);
 	noIpTimer = 0;

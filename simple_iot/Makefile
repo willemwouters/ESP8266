@@ -1,7 +1,7 @@
 # Base directory for the compiler
-TOOLCHAIN_BASE ?= bsp/toolchain
+TOOLCHAIN_BASE ?= bsp/tool_latest
 TOOLCHAIN_INCLUDE ?= $(TOOLCHAIN_BASE)/include
-SDK_BASE ?= bsp/sdk
+SDK_BASE ?= bsp/sdk_0_9_3
 SDK_INCLUDE ?= $(SDK_BASE)/include $(SDK_BASE)/include/json
 
 BUILD_BASE	= build
@@ -11,11 +11,11 @@ ESPTOOL		?= esptool.py
 ESPPORT		?= /dev/ttyACM0
 
 FW_TOOL		?= /usr/bin/esptool
-TARGET		= simple_push_int
+TARGET		= simple_io
 export PATH := $(TOOLCHAIN_BASE)/bin:$(PATH)
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= src src/io src/tcp src/io src/tty src/httpd src/pages
+MODULES		= src src/io src/tcp src/tty src/httpd src/pages
 
 # all MODULES/include will be included
 EXTRA_INCDIR	= \
@@ -23,7 +23,7 @@ EXTRA_INCDIR	= \
 		$(TOOLCHAIN_INCLUDE)
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy net80211 lwip wpa main
+LIBS		= c gcc gcov hal pp phy net80211 lwip wpa ssl main
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
@@ -35,8 +35,8 @@ LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 LD_SCRIPT	= eagle.app.v6.ld
 
 # various paths from the SDK used in this project
-SDK_LIBDIR	= libs
-TOOLCHAIN_LIBDIR	= libs
+SDK_LIBDIR	= lib
+TOOLCHAIN_LIBDIR	= lib
 SDK_LDDIR	= ld
 # these are the names and options to generate them
 FW_FILE_1	= 0x00000
