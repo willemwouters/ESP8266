@@ -1,7 +1,7 @@
 # Base directory for the compiler
-TOOLCHAIN_BASE ?= bsp/toolchain_latest
+TOOLCHAIN_BASE ?= bsp/xtensa-2
 TOOLCHAIN_INCLUDE ?= $(TOOLCHAIN_BASE)/include
-SDK_BASE ?= bsp/sdk_0_9_3
+SDK_BASE ?= bsp/esp_0_9_3
 SDK_INCLUDE ?= $(SDK_BASE)/include $(SDK_BASE)/include/json
 
 BUILD_BASE	= build
