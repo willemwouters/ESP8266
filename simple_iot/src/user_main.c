@@ -7,7 +7,7 @@
 #include "io/io.h"
 #include "httpd/httpd.h"
 #include "tcp/TcpClient.h"
-#include "tty/stdout.h"
+#include "tty/uart.h"
 #include "pages/index_cgi.h"
 static ETSTimer ipTimer;
 
@@ -100,8 +100,8 @@ void WifiConnectCb(void* arg) {
 
 
 void user_init(void) {
+	uart_init(BIT_RATE_115200);
 	wifi_set_opmode(3);
-	stdoutInit();
 	httpdInit(builtInUrls, 80);
 	noIpTimer = 0;
 	os_timer_disarm(&ipTimer);
