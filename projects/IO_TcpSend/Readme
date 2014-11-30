@@ -1,0 +1,3 @@
+Project with small AP server with http interface to setup wifi client connection
+
+If connection set then send tcp request on io interrupt

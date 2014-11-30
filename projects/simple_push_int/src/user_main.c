@@ -77,6 +77,7 @@ void WifiConnectCb(void* arg) {
 
 void user_init(void) {
 	stdoutInit();
+	wifi_set_opmode(3);
 	os_timer_disarm(&ipTimer);
 	os_timer_setfn(&ipTimer, WifiConnectCb, NULL);
 	os_printf("-%s-%s Schedule main loop after Wifi connect \r\n", __FILE__, __func__);
