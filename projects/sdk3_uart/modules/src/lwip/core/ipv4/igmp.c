@@ -156,7 +156,7 @@ static ip_addr_t     allrouters;
 void
 igmp_init(void)
 {
-  LWIP_DEBUGF(IGMP_DEBUG, ("igmp_init: initializing\n"));
+  LWIP_DEBUGF(LWIP_DBG_ON, ("igmp_init: initializing\n"));
 
   IP4_ADDR(&allsystems, 224, 0, 0, 1);
   IP4_ADDR(&allrouters, 224, 0, 0, 2);
@@ -193,7 +193,7 @@ igmp_start(struct netif *netif)
 {
   struct igmp_group* group;
 
-  LWIP_DEBUGF(IGMP_DEBUG, ("igmp_start: starting IGMP processing on if %p\n", netif));
+  LWIP_DEBUGF(LWIP_DBG_ON, ("igmp_start: starting IGMP processing on if %p\n", netif));
 
   group = igmp_lookup_group(netif, &allsystems);
 
@@ -521,7 +521,7 @@ igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
 
   /* make sure it is multicast address */
   LWIP_ERROR("igmp_joingroup: attempt to join non-multicast address", ip_addr_ismulticast(groupaddr), return ERR_VAL;);
-  LWIP_ERROR("igmp_joingroup: attempt to join allsystems address", (!ip_addr_cmp(groupaddr, &allsystems)), return ERR_VAL;);
+//  LWIP_ERROR("igmp_joingroup: attempt to join allsystems address", (!ip_addr_cmp(groupaddr, &allsystems)), return ERR_VAL;);
 
   /* loop through netif's */
   netif = netif_list;
@@ -534,18 +534,18 @@ igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
       if (group != NULL) {
         /* This should create a new group, check the state to make sure */
         if (group->group_state != IGMP_GROUP_NON_MEMBER) {
-          LWIP_DEBUGF(IGMP_DEBUG, ("igmp_joingroup: join to group not in state IGMP_GROUP_NON_MEMBER\n"));
+        	os_printf("igmp_joingroup: join to group not in state IGMP_GROUP_NON_MEMBER\n");
         } else {
           /* OK - it was new group */
-          LWIP_DEBUGF(IGMP_DEBUG, ("igmp_joingroup: join to new group: "));
-          ip_addr_debug_print(IGMP_DEBUG, groupaddr);
-          LWIP_DEBUGF(IGMP_DEBUG, ("\n"));
+        	os_printf ("igmp_joingroup: join to new group: ");
+          ip_addr_debug_print(LWIP_DBG_ON, groupaddr);
+          os_printf("\n");
 
           /* If first use of the group, allow the group at the MAC level */
           if ((group->use==0) && (netif->igmp_mac_filter != NULL)) {
-            LWIP_DEBUGF(IGMP_DEBUG, ("igmp_joingroup: igmp_mac_filter(ADD "));
-            ip_addr_debug_print(IGMP_DEBUG, groupaddr);
-            LWIP_DEBUGF(IGMP_DEBUG, (") on if %p\n", netif));
+        	  os_printf ("igmp_joingroup: igmp_mac_filter(ADD ");
+            ip_addr_debug_print(LWIP_DBG_ON, groupaddr);
+            os_printf(") on if %p\n", netif);
             netif->igmp_mac_filter(netif, groupaddr, IGMP_ADD_MAC_FILTER);
           }
 
@@ -564,13 +564,16 @@ igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
       } else {
         /* Return an error even if some network interfaces are joined */
         /** @todo undo any other netif already joined */
-        LWIP_DEBUGF(IGMP_DEBUG, ("igmp_joingroup: Not enought memory to join to group\n"));
+    	  os_printf("igmp_joingroup: Not enought memory to join to group\n");
         return ERR_MEM;
       }
     }
+    os_printf("igmp_leavegroup: next\n");
+
     /* proceed to next network interface */
     netif = netif->next;
   }
+  os_printf ("Returning: next\n");
 
   return err;
 }
@@ -641,6 +644,8 @@ igmp_leavegroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
         LWIP_DEBUGF(IGMP_DEBUG, ("igmp_leavegroup: not member of group\n"));
       }
     }
+    LWIP_DEBUGF(IGMP_DEBUG, ("igmp_leavegroup: next\n"));
+
     /* proceed to next network interface */
     netif = netif->next;
   }

@@ -2,7 +2,7 @@
 #define __ESPCONN_UDP_H__
 
 #ifndef ESPCONN_UDP_DEBUG
-#define ESPCONN_UDP_DEBUG LWIP_DBG_OFF
+#define ESPCONN_UDP_DEBUG LWIP_DBG_ON
 #endif
 
 #include "lwip/app/espconn.h"

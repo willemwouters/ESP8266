@@ -2,7 +2,7 @@
 #define __ESPCONN_TCP_H__
 
 #ifndef ESPCONN_TCP_DEBUG
-#define ESPCONN_TCP_DEBUG LWIP_DBG_OFF
+#define ESPCONN_TCP_DEBUG LWIP_DBG_ON
 #endif
 #include "lwip/app/espconn.h"
 

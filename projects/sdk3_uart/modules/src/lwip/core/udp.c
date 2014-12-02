@@ -96,12 +96,11 @@ udp_input(struct pbuf *p, struct netif *inp)
   UDP_STATS_INC(udp.recv);
 
   iphdr = (struct ip_hdr *)p->payload;
-os_printf("\nnew package\n");
   /* Check minimum length (IP header + UDP header)
    * and move payload pointer to UDP header */
   if (p->tot_len < (IPH_HL(iphdr) * 4 + UDP_HLEN) || pbuf_header(p, -(s16_t)(IPH_HL(iphdr) * 4))) {
     /* drop short packets */
-    LWIP_DEBUGF(LWIP_DBG_ON,
+    LWIP_DEBUGF(UDP_DEBUG,
                 ("udp_input: short UDP datagram (%"U16_F" bytes) discarded\n", p->tot_len));
     UDP_STATS_INC(udp.lenerr);
     UDP_STATS_INC(udp.drop);
@@ -115,13 +114,13 @@ os_printf("\nnew package\n");
   /* is broadcast packet ? */
   broadcast = ip_addr_isbroadcast(&current_iphdr_dest, inp);
 
-  LWIP_DEBUGF(LWIP_DBG_ON, ("udp_input: received datagram of length %"U16_F"\n", p->tot_len));
+  LWIP_DEBUGF(UDP_DEBUG, ("udp_input: received datagram of length %"U16_F"\n", p->tot_len));
 
   /* convert src and dest ports to host byte order */
   src = ntohs(udphdr->src);
   dest = ntohs(udphdr->dest);
 
-  udp_debug_print(udphdr);
+ // udp_debug_print(udphdr);
 
   /* print the UDP source and destination */
   LWIP_DEBUGF(UDP_DEBUG,
