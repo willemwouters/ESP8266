@@ -5,3 +5,12 @@
 [submodule "install/crosstool-NG"]
 	path = install/crosstool-NG
 	url = https://github.com/willemwouters/crosstool-NG.git
+[submodule "install/sdk-wiki"]
+	path = install/sdk-wiki
+	url = https://github.com/esp8266/esp8266-wiki.git
+[submodule "install/newlib-xtensa"]
+	path = install/newlib-xtensa
+	url = https://github.com/jcmvbkbc/newlib-xtensa.git
+[submodule "install/lib-hal"]
+	path = install/lib-hal
+	url = https://github.com/tommie/lx106-hal.git
