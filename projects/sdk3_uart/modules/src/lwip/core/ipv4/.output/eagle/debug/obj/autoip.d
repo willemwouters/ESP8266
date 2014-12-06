@@ -1,14 +1,9 @@
-.output/eagle/debug/obj/autoip.o .output/eagle/debug/obj/autoip.d : autoip.c \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/opt.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwipopts.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/debug.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/arch.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/arch/cc.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/c_types.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/ets_sys.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/c_types.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/eagle_soc.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/osapi.h \
+.output/eagle/debug/obj/autoip.o .output/eagle/debug/obj/autoip.d : autoip.c ../../../include/lwip/opt.h \
+ ../../../include/lwipopts.h ../../../include/lwip/debug.h \
+ ../../../include/lwip/arch.h ../../../include/arch/cc.h \
+ ../../../../include/c_types.h ../../../../include/ets_sys.h \
+ ../../../../include/c_types.h ../../../../include/eagle_soc.h \
+ ../../../../include/osapi.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/string.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/_ansi.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/newlib.h \
@@ -19,4 +14,4 @@
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/sys/_types.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/sys/lock.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/lib/gcc/xtensa-lx106-elf/4.8.2/include/stddef.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/user_config.h
+ ../../../include/user_config.h

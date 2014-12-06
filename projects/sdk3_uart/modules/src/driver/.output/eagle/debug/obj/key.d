@@ -1,10 +1,6 @@
-.output/eagle/debug/obj/key.o .output/eagle/debug/obj/key.d : key.c \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/ets_sys.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/c_types.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/eagle_soc.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/os_type.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/ets_sys.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/osapi.h \
+.output/eagle/debug/obj/key.o .output/eagle/debug/obj/key.d : key.c ../../include/ets_sys.h ../../include/c_types.h \
+ ../../include/eagle_soc.h ../../include/os_type.h \
+ ../../include/ets_sys.h ../../include/osapi.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/string.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/_ansi.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/newlib.h \
@@ -15,19 +11,9 @@
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/sys/_types.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include/sys/lock.h \
  /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/lib/gcc/xtensa-lx106-elf/4.8.2/include/stddef.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/user_config.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/mem.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/gpio.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/user_interface.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/ip_addr.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/opt.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwipopts.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/debug.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/arch.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/arch/cc.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/c_types.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/lwip/def.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/queue.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/user_config.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/include/spi_flash.h \
- /home/wouters/GIT/willemwouters/ESP8266/projects/sdk3_uart/src/include/driver/key.h
+ ../include/user_config.h ../../include/mem.h ../../include/gpio.h \
+ ../../include/user_interface.h ../../include/os_type.h \
+ ../include/lwip/ip_addr.h ../include/lwip/opt.h ../include/lwipopts.h \
+ ../include/lwip/debug.h ../include/lwip/arch.h ../include/arch/cc.h \
+ ../../include/c_types.h ../include/lwip/def.h ../../include/queue.h \
+ ../../include/spi_flash.h ../include/driver/key.h

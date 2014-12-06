@@ -62,11 +62,10 @@ static void ICACHE_FLASH_ATTR espconn_data_sent(void *arg)
 void ICACHE_FLASH_ATTR
 espconn_udp_sent(void *arg, uint8 *psent, uint16 length)
 {
-	arg = plink_active;
     espconn_msg *pudp_sent = arg;
     struct udp_pcb *upcb = pudp_sent->pcommon.pcb;
     struct pbuf *p, *q;
-    u8_t *data;
+    u8_t *data = NULL;
     u16_t cnt = 0;
     u16_t datalen = 0;
     u16_t i = 0;

@@ -101,7 +101,6 @@ struct tcp_pcb *tcp_tmp_pcb;
 static u8_t tcp_timer;
 static u16_t tcp_new_port(void);//����µ�tcp���ض˿�
 
-tcp_recv_fn recvCallback;
 /**
  * Called periodically to dispatch TCP timers.
  *
@@ -267,7 +266,7 @@ tcp_close(struct tcp_pcb *pcb)
 {
 #if TCP_DEBUG	//TCP debug��Ϣ����ӡpcb��״̬
   LWIP_DEBUGF(TCP_DEBUG, ("tcp_close: closing in "));
-  //tcp_debug_print_state(pcb->state);
+  tcp_debug_print_state(pcb->state);
 #endif /* TCP_DEBUG */
 
   if (pcb->state != LISTEN) {
@@ -417,7 +416,7 @@ tcp_bind(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
   struct tcp_pcb *cpcb;
 
   LWIP_ERROR("tcp_bind: can only bind in state CLOSED", pcb->state == CLOSED, return ERR_ISCONN);
-  //os_printf("Start tcp bind \n");
+
 #if SO_REUSE
   /* Unless the REUSEADDR flag is set,
      we have to check the pcbs in TIME-WAIT state, also.
@@ -448,7 +447,7 @@ tcp_bind(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
           if (ip_addr_isany(&(cpcb->local_ip)) ||
               ip_addr_isany(ipaddr) ||
               ip_addr_cmp(&(cpcb->local_ip), ipaddr)) {
-              os_printf("Address in use\n");
+              //os_printf("Address in use\n");
             return ERR_USE;
           }
         }
@@ -460,12 +459,8 @@ tcp_bind(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port)
     pcb->local_ip = *ipaddr;
   }
   pcb->local_port = port;
-
-  //os_printf("Start tcp register bindings \n");
   TCP_REG(&tcp_bound_pcbs, pcb);
-  //os_printf("Tcp bindings done\n");
-
-  LWIP_DEBUGF(TCP_DEBUG, ("tcp_bind: bind to port \n"));
+  LWIP_DEBUGF(TCP_DEBUG, ("tcp_bind: bind to port %"U16_F"\n", port));
   return ERR_OK;
 }
 #if LWIP_CALLBACK_API
@@ -549,8 +544,6 @@ tcp_listen_with_backlog(struct tcp_pcb *pcb, u8_t backlog)
   lpcb->backlog = (backlog ? backlog : 1);
 #endif /* TCP_LISTEN_BACKLOG */
   TCP_REG(&tcp_listen_pcbs.pcbs, (struct tcp_pcb *)lpcb);//���ƿ����tcp_listen_pcbs�����ײ�
-  LWIP_DEBUGF(TCP_DEBUG, ("tcp_bind: bind to port \n"));
-
   return (struct tcp_pcb *)lpcb;
 }
 
@@ -615,7 +608,8 @@ tcp_recved(struct tcp_pcb *pcb, u16_t len)
     tcp_output(pcb);
   }
 
-  LWIP_DEBUGF(TCP_DEBUG, ("tcp_recved: recveived "));
+  LWIP_DEBUGF(TCP_DEBUG, ("tcp_recved: recveived %"U16_F" bytes, wnd %"U16_F" (%"U16_F").\n",
+         len, pcb->rcv_wnd, TCP_WND - pcb->rcv_wnd));
 }
 
 /**
@@ -672,7 +666,7 @@ tcp_connect(struct tcp_pcb *pcb, ip_addr_t *ipaddr, u16_t port,
 
   LWIP_ERROR("tcp_connect: can only connected from state CLOSED", pcb->state == CLOSED, return ERR_ISCONN);
 
-  LWIP_DEBUGF(TCP_DEBUG, ("tcp_connect to port %\n"));
+  LWIP_DEBUGF(TCP_DEBUG, ("tcp_connect to port %"U16_F"\n", port));
   if (ipaddr != NULL) {
     pcb->remote_ip = *ipaddr;//������IP��ַ��Ч�������Ӽ�¼�м�¼��IP��ַ�����򷵻ش���
   } else {
@@ -855,7 +849,7 @@ tcp_slowtmr(void)
       if ((u32_t)(tcp_ticks - pcb->tmr) >
           TCP_FIN_WAIT_TIMEOUT / TCP_SLOW_INTERVAL) {
         ++pcb_remove;
-        LWIP_DEBUGF(LWIP_DBG_ON, ("tcp_slowtmr: removing pcb stuck in FIN-WAIT-2\n"));
+        LWIP_DEBUGF(TCP_DEBUG, ("tcp_slowtmr: removing pcb stuck in FIN-WAIT-2\n"));
       }
     }
 
@@ -911,7 +905,7 @@ tcp_slowtmr(void)
       if ((u32_t)(tcp_ticks - pcb->tmr) >
           TCP_SYN_RCVD_TIMEOUT / TCP_SLOW_INTERVAL) {
         ++pcb_remove;
-        LWIP_DEBUGF(LWIP_DBG_ON, ("tcp_slowtmr: removing pcb stuck in SYN-RCVD\n"));
+        LWIP_DEBUGF(TCP_DEBUG, ("tcp_slowtmr: removing pcb stuck in SYN-RCVD\n"));
       }
     }
 
@@ -919,7 +913,7 @@ tcp_slowtmr(void)
     if (pcb->state == LAST_ACK) {
       if ((u32_t)(tcp_ticks - pcb->tmr) > 2 * TCP_MSL / TCP_SLOW_INTERVAL) {
         ++pcb_remove;
-        LWIP_DEBUGF(LWIP_DBG_ON, ("tcp_slowtmr: removing pcb stuck in LAST-ACK\n"));
+        LWIP_DEBUGF(TCP_DEBUG, ("tcp_slowtmr: removing pcb stuck in LAST-ACK\n"));
       }
     }
 
@@ -1119,18 +1113,8 @@ tcp_seg_copy(struct tcp_seg *seg)
 err_t
 tcp_recv_null(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
-
-	//pcb->recv(pcb, p, err);
   LWIP_UNUSED_ARG(arg);
   if (p != NULL) {
-	  ip_addr_t Ip;
-	  IP4_ADDR(&Ip, 192, 168, 10, 1);
-	  int port = 90;
-
-	 if(pcb->local_ip.addr == Ip.addr && pcb->local_port == port) {
-	    recvCallback(arg, pcb, p, err);
-	 }
-
     tcp_recved(pcb, p->tot_len);
     pbuf_free(p);
   } else if (err == ERR_OK) {
@@ -1264,8 +1248,8 @@ tcp_alloc(u8_t prio)
 
 #if LWIP_CALLBACK_API
     pcb->recv = tcp_recv_null;								//ע�������ݵ�Ĭ���ϲ㺯��
-#endif /* LWIP_CALLBACK_API */
-
+#endif /* LWIP_CALLBACK_API */  
+    
     /* Init KEEPALIVE timer */
     pcb->keep_idle  = TCP_KEEPIDLE_DEFAULT;
     
@@ -1323,7 +1307,6 @@ void
 tcp_recv(struct tcp_pcb *pcb, tcp_recv_fn recv)
 {
   pcb->recv = recv;
-  recvCallback = recv;
 }
 
 /**

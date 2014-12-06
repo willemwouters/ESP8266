@@ -178,8 +178,8 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
     // rom use 74880 baut_rate, here reinitialize
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
-//    UartDev.baut_rate = uart1_br;
-//    uart_config(UART1);
+    UartDev.baut_rate = uart1_br;
+    uart_config(UART1);
     ETS_UART_INTR_ENABLE();
 
     // install uart1 putc callback

@@ -140,7 +140,7 @@ netif_add(struct netif *netif, ip_addr_t *ipaddr, ip_addr_t *netmask,
   static u8_t netifnum = 0;
 
   LWIP_ASSERT("No init function given", init != NULL);
-
+os_printf("\nnetif_add\n");
   /* reset new interface configuration state */
   ip_addr_set_zero(&netif->ip_addr);
   ip_addr_set_zero(&netif->netmask);

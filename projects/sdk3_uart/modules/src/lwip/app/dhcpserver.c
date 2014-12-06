@@ -779,7 +779,7 @@ static void ICACHE_FLASH_ATTR wifi_softap_init_dhcps_lease(uint32 ip)
 	}
 	dhcps_lease.start_ip = htonl(dhcps_lease.start_ip);
 	dhcps_lease.end_ip= htonl(dhcps_lease.end_ip);
-	os_printf("start_ip = 0x%x, end_ip = 0x%x\n",dhcps_lease.start_ip, dhcps_lease.end_ip);
+//	os_printf("start_ip = 0x%x, end_ip = 0x%x\n",dhcps_lease.start_ip, dhcps_lease.end_ip);
 }
 ///////////////////////////////////////////////////////////////////////////////////
 void ICACHE_FLASH_ATTR dhcps_start(struct ip_info *info)
@@ -798,7 +798,9 @@ void ICACHE_FLASH_ATTR dhcps_start(struct ip_info *info)
 
 	udp_bind(pcb_dhcps, IP_ADDR_ANY, DHCPS_SERVER_PORT);
 	udp_recv(pcb_dhcps, handle_dhcp, NULL);
+#if DHCPS_DEBUG
 	os_printf("dhcps:dhcps_start->udp_recv function Set a receive callback handle_dhcp for UDP_PCB pcb_dhcps\n");
+#endif
 		
 }
 
