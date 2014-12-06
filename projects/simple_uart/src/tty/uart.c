@@ -260,7 +260,7 @@ uart_recvTask(os_event_t *events)
       break;
     case uartrcv_statRecving: //push receive data to cmd line
       *pCmdLine = temp;
-      if(temp == '\n') // found newline lets parse our data
+      if(temp == '\r') // found newline lets parse our data
       {
         system_os_post(uart_processdataTrigger, 0, 0); // buffer might still be full be full, thats why this is handled is seperate task
         pCmdLine++;
