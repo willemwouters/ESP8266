@@ -1,3 +1,7 @@
 [submodule "gcc/xtensa-lx106-elf_02/include_external"]
 	path = gcc/xtensa-lx106-elf_02/include_external
 	url = https://github.com/esp8266/esp8266-wiki.wiki.git
+
+[submodule "install/crosstool-NG"]
+	path = install/crosstool-NG
+	url = https://github.com/willemwouters/crosstool-NG.git
