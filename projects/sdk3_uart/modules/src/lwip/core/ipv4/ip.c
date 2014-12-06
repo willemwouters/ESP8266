@@ -111,6 +111,23 @@ ip_addr_t current_iphdr_dest;
 /** The IP header ID of the next outgoing IP packet */
 static u16_t ip_id;
 
+
+struct netif * get_first_netif() {
+	  struct netif *netif = NULL;
+	  struct netif *netifValid = NULL;
+
+	  /* iterate through netifs */
+	  for(netif = netif_list; netif != NULL; netif = netif->next) {
+	    /* network mask matches? */
+		os_printf("Iterating trough netif list\n");
+	    if (netif_is_up(netif)) {
+	  	  os_printf("Netif is up \n");
+	  	  netifValid = netif;
+	    }
+	  }
+
+	  return netifValid;
+}
 /**
  * Finds the appropriate network interface for a given IP address. It
  * searches the list of network interfaces linearly. A match is found
@@ -128,9 +145,13 @@ ip_route(ip_addr_t *dest)
   /* iterate through netifs */
   for(netif = netif_list; netif != NULL; netif = netif->next) {
     /* network mask matches? */
+	os_printf("Iterating trough netif list\n");
     if (netif_is_up(netif)) {
+  	  os_printf("Netif is up \n");
+
       if (ip_addr_netcmp(dest, &(netif->ip_addr), &(netif->netmask))) {
         /* return netif on which to forward IP packet */
+    	  os_printf("Found the correct netif interface\n");
         return netif;
       }
       if (!ip_addr_isbroadcast(dest, netif) && netif != netif_default) {
@@ -139,7 +160,7 @@ ip_route(ip_addr_t *dest)
     }
   }
   if ((netif_default == NULL) || (!netif_is_up(netif_default))) {
-    LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_route: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
+    LWIP_DEBUGF(LWIP_DBG_ON | LWIP_DBG_LEVEL_SERIOUS, ("ip_route: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
       ip4_addr1_16(dest), ip4_addr2_16(dest), ip4_addr3_16(dest), ip4_addr4_16(dest)));
     IP_STATS_INC(ip.rterr);
     snmp_inc_ipoutnoroutes();
@@ -661,7 +682,7 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
       ip_hlen += optlen_aligned;
       /* First write in the IP options */
       if (pbuf_header(p, optlen_aligned)) {
-        LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_output_if_opt: not enough room for IP options in pbuf\n"));
+        LWIP_DEBUGF(LWIP_DBG_ON | LWIP_DBG_LEVEL_SERIOUS, ("ip_output_if_opt: not enough room for IP options in pbuf\n"));
         IP_STATS_INC(ip.err);
         snmp_inc_ipoutdiscards();
         return ERR_BUF;
@@ -680,7 +701,7 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
 #endif /* IP_OPTIONS_SEND */
     /* generate IP header */
     if (pbuf_header(p, IP_HLEN)) {
-      LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_output: not enough room for IP header in pbuf\n"));
+      LWIP_DEBUGF(LWIP_DBG_ON | LWIP_DBG_LEVEL_SERIOUS, ("ip_output: not enough room for IP header in pbuf\n"));
 
       IP_STATS_INC(ip.err);
       snmp_inc_ipoutdiscards();
@@ -770,7 +791,7 @@ err_t ip_output_if_opt(struct pbuf *p, ip_addr_t *src, ip_addr_t *dest,
   }
 #endif /* IP_FRAG */
 
-  LWIP_DEBUGF(IP_DEBUG, ("netif->output()\n"));
+  LWIP_DEBUGF(LWIP_DBG_ON, ("netif->output()\n"));
   return netif->output(netif, p, dest);
 }
 

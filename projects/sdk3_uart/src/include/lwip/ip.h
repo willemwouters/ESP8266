@@ -169,6 +169,7 @@ extern ip_addr_t current_iphdr_src;
 extern ip_addr_t current_iphdr_dest;
 
 #define ip_init() /* Compatibility define, not init needed. */
+struct netif * get_first_netif();
 struct netif *ip_route(ip_addr_t *dest)ICACHE_FLASH_ATTR;
 struct netif *ip_router(ip_addr_t *dest, ip_addr_t *source);
 

@@ -193,6 +193,8 @@ igmp_start(struct netif *netif)
 {
   struct igmp_group* group;
 
+  os_printf("IGMP START\r\n");
+
   LWIP_DEBUGF(LWIP_DBG_ON, ("igmp_start: starting IGMP processing on if %p\n", netif));
 
   group = igmp_lookup_group(netif, &allsystems);
@@ -521,7 +523,7 @@ igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
 
   /* make sure it is multicast address */
   LWIP_ERROR("igmp_joingroup: attempt to join non-multicast address", ip_addr_ismulticast(groupaddr), return ERR_VAL;);
-//  LWIP_ERROR("igmp_joingroup: attempt to join allsystems address", (!ip_addr_cmp(groupaddr, &allsystems)), return ERR_VAL;);
+  LWIP_ERROR("igmp_joingroup: attempt to join allsystems address", (!ip_addr_cmp(groupaddr, &allsystems)), return ERR_VAL;);
 
   /* loop through netif's */
   netif = netif_list;
@@ -537,15 +539,15 @@ igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
         	os_printf("igmp_joingroup: join to group not in state IGMP_GROUP_NON_MEMBER\n");
         } else {
           /* OK - it was new group */
-        	os_printf ("igmp_joingroup: join to new group: ");
-          ip_addr_debug_print(LWIP_DBG_ON, groupaddr);
+        	os_printf ("igmp_joingroup: join to new group ");
+          //ip_addr_debug_print(LWIP_DBG_ON, groupaddr);
           os_printf("\n");
 
           /* If first use of the group, allow the group at the MAC level */
           if ((group->use==0) && (netif->igmp_mac_filter != NULL)) {
-        	  os_printf ("igmp_joingroup: igmp_mac_filter(ADD ");
-            ip_addr_debug_print(LWIP_DBG_ON, groupaddr);
-            os_printf(") on if %p\n", netif);
+        	  os_printf ("first use of the group, allow the group at the MAC level\n ");
+            //ip_addr_debug_print(LWIP_DBG_ON, groupaddr);
+            //os_printf(") on if %p\n", netif);
             netif->igmp_mac_filter(netif, groupaddr, IGMP_ADD_MAC_FILTER);
           }
 
@@ -568,7 +570,7 @@ igmp_joingroup(ip_addr_t *ifaddr, ip_addr_t *groupaddr)
         return ERR_MEM;
       }
     }
-    os_printf("igmp_leavegroup: next\n");
+    os_printf("igmp_joingroup: next\n");
 
     /* proceed to next network interface */
     netif = netif->next;
