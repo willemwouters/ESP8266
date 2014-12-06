@@ -5,7 +5,7 @@
 
 //Missing function prototypes in include folders. Gcc will warn on these if we don't define 'em anywhere.
 //MOST OF THESE ARE GUESSED! but they seem to swork and shut up the compiler.
-
+void ets_delay_us(long delay);
 int atoi(const char *nptr);
 void ets_install_putc1(void *routine);
 void ets_isr_attach(int intr, void *handler, void *arg);

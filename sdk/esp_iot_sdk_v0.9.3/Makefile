@@ -4,11 +4,11 @@ ifndef PDIR
 
 endif
 
-AR = xt-ar
-CC = xt-xcc
-NM = xt-nm
-CPP = xt-cpp
-OBJCOPY = xt-objcopy
+AR = xtensa-lx106-elf-ar
+CC = xtensa-lx106-elf-cc
+NM = xtensa-lx106-elf-nm
+CPP = xtensa-lx106-elf-cpp
+OBJCOPY = xtensa-lx106-elf-objcopy
 #MAKE = xt-make
 
 CSRCS ?= $(wildcard *.c)
@@ -49,7 +49,7 @@ CCFLAGS += 			\
 	-mtext-section-literals
 #	-Wall			
 
-CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)
+CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(INCLUDES) -I /home/wouters/GIT/willemwouters/ESP8266/gcc/xtensa-lx106-elf_02/include
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)
 
 

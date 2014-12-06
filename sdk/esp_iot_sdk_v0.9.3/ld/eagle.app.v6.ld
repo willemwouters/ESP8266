@@ -178,4 +178,4 @@ SECTIONS
 }
 
 /* get ROM code address */
-INCLUDE "bsp/sdk_0_9_3/ld/eagle.rom.addr.v6.ld"
+INCLUDE "/home/wouters/GIT/willemwouters/ESP8266/sdk/esp_iot_sdk_v0.9.3/ld/eagle.rom.addr.v6.ld"

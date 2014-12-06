@@ -18,7 +18,7 @@ elf_file = sys.argv[1]
 ver = sys.argv[2]
 #print elf_file
 
-cmd = 'xt-nm -g ' + elf_file + ' > eagle.app.sym'
+cmd = 'xtensa-lx106-elf-nm -g ' + elf_file + ' > eagle.app.sym'
 #print cmd
 os.system(cmd)
 

@@ -1861,7 +1861,7 @@
  * IGMP_DEBUG: Enable debugging in igmp.c.
  */
 #ifndef IGMP_DEBUG
-#define IGMP_DEBUG                      LWIP_DBG_ALL
+#define IGMP_DEBUG                      LWIP_DBG_ON
 #endif
 
 /**
