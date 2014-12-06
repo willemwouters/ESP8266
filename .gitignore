@@ -1,3 +1,5 @@
 *.o
 *.a
 *.d
+.output
+.build
