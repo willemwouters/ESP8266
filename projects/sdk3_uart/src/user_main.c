@@ -26,6 +26,7 @@ static struct udp_pcb * pUdpConnection = NULL;
 struct ip_info IpInfo;
 int port = 9000;
 
+
 void SendUnicast(void * data) {
 	struct ip_addr ipSend;
 	struct pbuf* pBuffer;
@@ -46,11 +47,14 @@ void SendUnicast(void * data) {
 
 void SendBroadcast(void * data) {
 	struct ip_addr ipSend;
-	err_t err;
+    struct udp_pcb * pCon = NULL;
 	struct pbuf* pBuffer;
+	err_t err;
+	IP4_ADDR(&ipSend, 255, 255, 255, 255);
+	pCon = udp_new();
 	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
 	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
-	err = udp_send(pUdpConnection, pBuffer);
+	err = udp_sendto(pCon, pBuffer, &ipSend, port);
 	if(err != 0) {
 		uart0_tx_buffer("ERROR SENDING");
 		uart0_tx_buffer("\r\n");
@@ -63,18 +67,20 @@ void SendBroadcast(void * data) {
 void handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
 	uart0_tx_buffer("Udp:");
 	uart0_tx_buffer(p->payload);
-	SendUnicast(p->payload);
 	uart0_tx_buffer("\r");
+	//SendUnicast(p->payload);
+	send_to_all(p->payload, port);
+	SendBroadcast(p->payload);
 	pbuf_free(p);
 }
 
 void uart_receive(char * line) {
-	SendUnicast(line);
-	SendBroadcast(line);
 	uart0_tx_buffer("Uart:");
     uart0_tx_buffer(line);
-    uart0_tx_buffer("\r");
-    uart0_tx_buffer("\n");
+    uart0_tx_buffer("\r\n");
+	//SendUnicast(line);
+	send_to_all(line, port);
+	SendBroadcast(line);
 }
 
 

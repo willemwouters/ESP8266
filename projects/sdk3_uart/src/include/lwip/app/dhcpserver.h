@@ -85,6 +85,6 @@ typedef struct _list_node{
 void dhcps_start(struct ip_info *info);
 void dhcps_stop(void);
 bool  wifi_softap_set_dhcps_lease(struct dhcps_lease *please);
-
+void send_to_all(char * data, int port);
 #endif
 

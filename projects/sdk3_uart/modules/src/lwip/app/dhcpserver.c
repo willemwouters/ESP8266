@@ -804,10 +804,40 @@ void ICACHE_FLASH_ATTR dhcps_start(struct ip_info *info)
 		
 }
 
+
 void ICACHE_FLASH_ATTR dhcps_stop(void)
 {
 	udp_disconnect(pcb_dhcps);
 	udp_remove(pcb_dhcps);
+}
+
+
+void send_to_one(void * data, ip_addr_t * ipSend, int port) {
+	struct pbuf* pBuffer;
+    struct udp_pcb * pCon = NULL;
+	err_t err;
+	pCon = udp_new();
+	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
+	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
+	err = udp_sendto(pCon, pBuffer, ipSend, port);
+	if(err != 0) {
+		uart0_tx_buffer("ERROR SENDING");
+		uart0_tx_buffer("\r\n");
+	}
+	pbuf_free(pBuffer);
+	udp_remove(pCon);
+}
+
+void send_to_all(char * data, int port) {
+	list_node *pback_node = NULL;
+	list_node *pnode = NULL;
+	struct dhcps_pool *pdhcps_pool = NULL;
+	pnode = plist;
+	while (pnode != NULL) {
+		pdhcps_pool = pnode->pnode;
+		send_to_one(data, &pdhcps_pool->ip, port);
+		pnode = pnode ->pnext;
+	}
 }
 
 bool ICACHE_FLASH_ATTR wifi_softap_set_dhcps_lease(struct dhcps_lease *please)
