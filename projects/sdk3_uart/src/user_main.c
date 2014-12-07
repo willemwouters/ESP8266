@@ -17,9 +17,6 @@
 #include "lwip/app/espconn.h"
 #include "lwip/app/espconn_udp.h"
 
-//#include "user_interface.h"
-//#include "netif/wlan_lwip_if.h"
-
 static ETSTimer waitTimer;
 static struct udp_pcb * pUdpConnection = NULL;
 
@@ -37,10 +34,6 @@ void SendUnicast(void * data) {
 	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
 	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
 	err = udp_sendto(pCon, pBuffer, &ipSend, port);
-	if(err != 0) {
-		uart0_tx_buffer("ERROR SENDING");
-		uart0_tx_buffer("\r\n");
-	}
 	pbuf_free(pBuffer);
 	udp_remove(pCon);
 }
@@ -55,30 +48,18 @@ void SendBroadcast(void * data) {
 	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
 	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
 	err = udp_sendto(pCon, pBuffer, &ipSend, port);
-	if(err != 0) {
-		uart0_tx_buffer("ERROR SENDING");
-		uart0_tx_buffer("\r\n");
-	}
 	pbuf_free(pBuffer);
 	os_timer_disarm(&waitTimer);
 }
 
 
 void handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
-	uart0_tx_buffer("Udp:");
 	uart0_tx_buffer(p->payload);
-	uart0_tx_buffer("\r");
-	//SendUnicast(p->payload);
-	send_to_all(p->payload, port);
-	SendBroadcast(p->payload);
+	uart0_tx_buffer("\r\n");
 	pbuf_free(p);
 }
 
 void uart_receive(char * line) {
-	uart0_tx_buffer("Uart:");
-    uart0_tx_buffer(line);
-    uart0_tx_buffer("\r\n");
-	//SendUnicast(line);
 	send_to_all(line, port);
 	SendBroadcast(line);
 }
@@ -110,7 +91,7 @@ static struct softap_config apconf;
 void user_init(void) {
 	char * ap = "Willem";
 	char * pass = "00000000";
-	uart_init(BIT_RATE_115200, uart_receive, true);
+	uart_init(BIT_RATE_115200, uart_receive, false);
 	os_printf("\nUart init done... \n");
 
 
