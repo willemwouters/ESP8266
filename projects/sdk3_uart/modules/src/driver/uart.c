@@ -20,7 +20,7 @@
 extern UartDevice UartDev;
 
 LOCAL void uart0_rx_intr_handler(void *para);
-
+char readOutBuffer[RX_BUFF_SIZE] = { 0 };
 /******************************************************************************
  * FunctionName : uart_config
  * Description  : Internal used function
@@ -92,6 +92,10 @@ uart0_tx_one_char(uint8 TxChar)
  * Returns      : NONE
 *******************************************************************************/
 LOCAL void ICACHE_FLASH_ATTR
+uart1_write_char(char c)
+{ }
+
+LOCAL void ICACHE_FLASH_ATTR
 uart0_write_char(char c)
 {
     if (c == '\n') {
@@ -102,6 +106,7 @@ uart0_write_char(char c)
         uart0_tx_one_char(c);
     }
 }
+uart_recv_line  uart_recv_line_cb;
 
 /******************************************************************************
  * FunctionName : uart0_rx_intr_handler
@@ -127,18 +132,19 @@ uart0_rx_intr_handler(void *para)
 
     while (READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S)) {
         RcvChar = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-
-        /* you can add your handle code below.*/
-
-        *(pRxBuff->pWritePos) = RcvChar;
-
-        // insert here for get one command line from uart
         if (RcvChar == '\r') {
-            pRxBuff->BuffState = WRITE_OVER;
-            os_printf(pRxBuff->BuffState);
+            pRxBuff->pWritePos++;
+            *(pRxBuff->pWritePos) = '\0';
+        	pRxBuff->BuffState = WRITE_OVER;
+        	pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff;
+            os_memset(readOutBuffer, 0, RX_BUFF_SIZE);
+        	os_memcpy(readOutBuffer, pRxBuff->pRcvMsgBuff, os_strlen(pRxBuff->pRcvMsgBuff));
+            os_memset(pRxBuff->pRcvMsgBuff, 0, RX_BUFF_SIZE);
+            uart_recv_line_cb(readOutBuffer);
+        } else {
+            *(pRxBuff->pWritePos) = RcvChar;
+            pRxBuff->pWritePos++;
         }
-
-        pRxBuff->pWritePos++;
 
         if (pRxBuff->pWritePos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
             // overflow ...we may need more error handle here.
@@ -164,7 +170,6 @@ uart0_tx_buffer(uint8 *buf, uint16 len)
         uart_tx_one_char(buf[i]);
     }
 }
-
 /******************************************************************************
  * FunctionName : uart_init
  * Description  : user interface for init uart
@@ -173,16 +178,20 @@ uart0_tx_buffer(uint8 *buf, uint16 len)
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
+uart_init(UartBautRate uart0_br, uart_recv_line uart_recv_line_cb_tmp, bool debugprint)
 {
     // rom use 74880 baut_rate, here reinitialize
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
-    UartDev.baut_rate = uart1_br;
-    uart_config(UART1);
+    char* buff = (UartDev.rcv_buff.pRcvMsgBuff);
+    os_memset(buff, 0, RX_BUFF_SIZE);
     ETS_UART_INTR_ENABLE();
-
+    uart_recv_line_cb = uart_recv_line_cb_tmp;
     // install uart1 putc callback
-    os_install_putc1((void *)uart0_write_char);
+    if(debugprint) {
+    	os_install_putc1((void *)uart0_write_char);
+    } else {
+    	os_install_putc1((void *)uart1_write_char);
+    }
 }
 

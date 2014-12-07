@@ -1795,7 +1795,7 @@
  * messages are written.
  */
 #ifndef LWIP_DBG_MIN_LEVEL
-#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_ALL
+#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_SERIOUS
 #endif
 
 /**
@@ -1859,7 +1859,7 @@
  * IGMP_DEBUG: Enable debugging in igmp.c.
  */
 #ifndef IGMP_DEBUG
-#define IGMP_DEBUG                      LWIP_DBG_OFF
+#define IGMP_DEBUG                      LWIP_DBG_ON
 #endif
 
 /**

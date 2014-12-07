@@ -111,6 +111,11 @@ ip_addr_t current_iphdr_dest;
 /** The IP header ID of the next outgoing IP packet */
 static u16_t ip_id;
 
+
+
+struct netif * get_first_netif() {
+	return netif_default;
+}
 /**
  * Finds the appropriate network interface for a given IP address. It
  * searches the list of network interfaces linearly. A match is found
@@ -139,7 +144,7 @@ ip_route(ip_addr_t *dest)
     }
   }
   if ((netif_default == NULL) || (!netif_is_up(netif_default))) {
-    LWIP_DEBUGF(IP_DEBUG | LWIP_DBG_LEVEL_SERIOUS, ("ip_route: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
+    LWIP_DEBUGF(LWIP_DBG_ON | LWIP_DBG_LEVEL_SERIOUS, ("ip_route: No route to %"U16_F".%"U16_F".%"U16_F".%"U16_F"\n",
       ip4_addr1_16(dest), ip4_addr2_16(dest), ip4_addr3_16(dest), ip4_addr4_16(dest)));
     IP_STATS_INC(ip.rterr);
     snmp_inc_ipoutnoroutes();

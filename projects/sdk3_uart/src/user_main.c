@@ -22,23 +22,49 @@
 
 static ETSTimer resetTimer;
 
-static ETSTimer testTimer;
+static ETSTimer waitTimer;
 static struct udp_pcb * pUdpConnection = NULL;
+static struct udp_pcb * pUdpSendConnection = NULL;
 
 struct ip_info IpInfo;
 
 
-char * data = "HOOOI";
+struct netif * Wlan0;
+//struct ip_addr ip_addr_udp_multicast;
 
-struct ip_addr ip_addr_udp_multicast;
 
+void handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
+	os_printf(p->payload);
+}
 
-void TestCb(void* arg) {
+void SendBroadcast(char * data) {
+	struct ip_addr ipSend;
+	err_t err;
+	pUdpSendConnection = udp_new();
 	static struct pbuf* pBuffer;
-	struct ip_addr ip_addr_udp_server;
+	IP4_ADDR(&ipSend, 255, 255, 255, 255);
+	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
+	os_memcpy(pBuffer->payload, data, os_strlen(data));
+	err = udp_sendto_if(pUdpSendConnection, pBuffer, &ipSend, 2080, Wlan0);
+}
 
 
-	struct netif * Wlan0 = get_first_netif();
+void uart_receive(char * line) {
+    SendBroadcast(line);
+}
+
+void init_udp() {
+	err_t err;
+	lwip_init();
+	pUdpConnection = udp_new();
+	if(pUdpConnection == NULL) {
+		os_printf("\nCould not create new udp socket... \n");
+	}
+	err = udp_bind(pUdpConnection, &IpInfo.ip, 2080);
+	udp_recv(pUdpConnection, handle_udp_recv, pUdpConnection);
+	Wlan0 = get_first_netif();
+	/*
+
 	if(Wlan0 != NULL) {
 		igmp_start(Wlan0);
 		os_printf(" netif != null!!!!! \r\n");
@@ -46,27 +72,10 @@ void TestCb(void* arg) {
 		os_printf("SHIT netif == null!!!!! \r\n");
 	}
 
-	IP4_ADDR(&ip_addr_udp_multicast, 239, 0, 0, 3);
-	IP4_ADDR(&ip_addr_udp_server, 192, 168, 10, 1);
-
-	err_t err = igmp_joingroup(&ip_addr_udp_server, &ip_addr_udp_multicast);
+	err = igmp_joingroup(&IpInfo.ip, &ip_addr_udp_multicast);
 	os_printf("Igmp join: %d", err);
-
-
-	pBuffer = pbuf_alloc(PBUF_TRANSPORT, sizeof(char) * 20, PBUF_RAM);
-	os_memcpy(pBuffer->payload, data, 5);
-	os_printf("\nSending data... \n");
-	err_t errr = udp_sendto(pUdpConnection, pBuffer, &ip_addr_udp_multicast, 2080);
-	os_printf("\nUdp send done...  %d \n", errr);
-}
-
-
-void handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
-	os_printf(p->payload);
-	os_printf("\nReceived UDP... \n");
-
-
-	os_timer_arm(&testTimer, 5000, 0);
+	*/
+	os_timer_disarm(&waitTimer);
 }
 
 static struct softap_config apconf;
@@ -74,6 +83,9 @@ static struct softap_config apconf;
 void user_init(void) {
 	char * ap = "Willem";
 	char * pass = "00000000";
+	uart_init(BIT_RATE_115200, uart_receive, false);
+	os_printf("\nUart init done... \n");
+
 
 	wifi_softap_get_config(&apconf);
 	os_strncpy((char*)apconf.ssid, ap, 32);
@@ -83,42 +95,22 @@ void user_init(void) {
 	apconf.ssid_hidden = 0;
 	wifi_softap_set_config(&apconf);
 
-
-	IP4_ADDR(&IpInfo.gw, 192, 168, 10, 1);
-	IP4_ADDR(&IpInfo.ip, 192, 168, 10, 1);
-	IP4_ADDR(&IpInfo.netmask, 255, 255, 255, 0);
-
-	uart_init(BIT_RATE_115200, BIT_RATE_115200);
-	os_printf("\nUart init done... \n");
-
-
-	lwip_init();
-
-	os_printf("\nUdp new... \n");
-	pUdpConnection = udp_new();
-	if(pUdpConnection == NULL) {
-		os_printf("\nCould not create new udp socket... \n");
-	}
-	os_printf("\nUdp new done... \n");
-	os_printf("\nUdp bind... \n");
-
-
-	udp_bind(pUdpConnection, IP_ADDR_ANY, 2080);
-	udp_recv(pUdpConnection, handle_udp_recv, NULL);
-	os_printf("\nUdp bind done... \n");
-
-
 	wifi_softap_dhcps_start();
 	wifi_softap_dhcps_stop();
 
 	dhcps_start(&IpInfo);
 	dhcps_stop();
+
+	IP4_ADDR(&IpInfo.gw, 192, 168, 10, 1);
+	IP4_ADDR(&IpInfo.ip, 192, 168, 10, 1);
+	IP4_ADDR(&IpInfo.netmask, 255, 255, 255, 0);
+
 	wifi_set_ip_info(0x01, &IpInfo);
 
-	os_timer_disarm(&testTimer);
-	os_timer_setfn(&testTimer, TestCb, NULL);
 
-	os_printf("\nReady \n");
+	os_timer_disarm(&waitTimer);
+	os_timer_setfn(&waitTimer, init_udp, NULL);
+	os_timer_arm(&waitTimer, 5000, 0);
 
 }
 

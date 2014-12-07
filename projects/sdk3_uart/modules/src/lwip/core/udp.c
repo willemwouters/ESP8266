@@ -121,7 +121,7 @@ udp_input(struct pbuf *p, struct netif *inp)
   src = ntohs(udphdr->src);
   dest = ntohs(udphdr->dest);
 
-  udp_debug_print(udphdr);
+  //udp_debug_print(udphdr);
 
   /* print the UDP source and destination */
   LWIP_DEBUGF(UDP_DEBUG,
