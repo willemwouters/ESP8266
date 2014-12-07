@@ -162,11 +162,11 @@ uart0_rx_intr_handler(void *para)
  * Returns      :
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-uart0_tx_buffer(uint8 *buf, uint16 len)
+uart0_tx_buffer(char *buf)
 {
     uint16 i;
 
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < os_strlen(buf); i++) {
         uart_tx_one_char(buf[i]);
     }
 }
