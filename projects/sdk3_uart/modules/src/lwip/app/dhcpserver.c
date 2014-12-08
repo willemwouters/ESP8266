@@ -824,7 +824,7 @@ void send_to_one(void * data, ip_addr_t * ipSend, int port, int retry) {
 	udp_remove(pCon);
 	if(err != 0 && retry < 2) {
 		retry++;
-		uart0_tx_buffer("ERROR SENDING \r\n");
+		os_printf("ERROR SENDING \r\n");
 		os_printf(IPSTR, IP2STR(ipSend));
 		os_printf("tried it: %d\r\n", retry);
 		send_to_one(data, ipSend, port, retry);
