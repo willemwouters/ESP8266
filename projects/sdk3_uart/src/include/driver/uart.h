@@ -76,6 +76,15 @@ typedef enum {
     RCV_ESC_CHAR,
 } RcvMsgState;
 
+typedef enum{
+  at_statIdle,
+  at_statRecving,
+  at_statProcess,
+  at_statIpSending,
+  at_statIpSended,
+  at_statIpTraning
+}at_stateType;
+
 typedef struct {
     UartBautRate 	     baut_rate;
     UartBitsNum4Char  data_bits;

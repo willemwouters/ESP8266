@@ -821,7 +821,8 @@ void send_to_one(void * data, ip_addr_t * ipSend, int port) {
 	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
 	err = udp_sendto(pCon, pBuffer, ipSend, port);
 	if(err != 0) {
-		uart0_tx_buffer("ERROR SENDING");
+		os_printf("ERROR SENDING %d", err);
+		os_printf(IPSTR, IP2STR(ipSend));
 		uart0_tx_buffer("\r\n");
 	}
 	pbuf_free(pBuffer);

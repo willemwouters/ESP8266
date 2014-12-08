@@ -12,6 +12,7 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "driver/uart.h"
+#include "os_type.h"
 
 #define UART0   0
 #define UART1   1
@@ -114,13 +115,11 @@ uart_recv_line  uart_recv_line_cb;
  *                UART0 interrupt handler, add self handle code inside
  * Parameters   : void *para - point to ETS_UART_INTR_ATTACH's arg
  * Returns      : NONE
-*******************************************************************************/
+******************************************************************************
 LOCAL void
 uart0_rx_intr_handler(void *para)
 {
-    /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
-     * uart1 and uart0 respectively
-     */
+
     RcvMsgBuff *pRxBuff = (RcvMsgBuff *)para;
     uint8 RcvChar;
 
@@ -132,8 +131,9 @@ uart0_rx_intr_handler(void *para)
 
     while (READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S)) {
         RcvChar = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-        if (RcvChar == '\r') {
-            pRxBuff->pWritePos++;
+        if (RcvChar == '\n') {
+        	ETS_UART_INTR_DISABLE();
+        	pRxBuff->pWritePos++;
             *(pRxBuff->pWritePos) = '\0';
         	pRxBuff->BuffState = WRITE_OVER;
         	pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff;
@@ -141,6 +141,7 @@ uart0_rx_intr_handler(void *para)
         	os_memcpy(readOutBuffer, pRxBuff->pRcvMsgBuff, os_strlen(pRxBuff->pRcvMsgBuff));
             os_memset(pRxBuff->pRcvMsgBuff, 0, RX_BUFF_SIZE);
             uart_recv_line_cb(readOutBuffer);
+            ETS_UART_INTR_ENABLE();
         } else {
             *(pRxBuff->pWritePos) = RcvChar;
             pRxBuff->pWritePos++;
@@ -152,6 +153,9 @@ uart0_rx_intr_handler(void *para)
         }
     }
 }
+*/
+
+
 
 
 /******************************************************************************
@@ -170,6 +174,112 @@ uart0_tx_buffer(char *buf)
         uart_tx_one_char(buf[i]);
     }
 }
+
+
+
+at_stateType  at_state;
+
+
+#define at_recvTaskPrio        0
+#define at_recvTaskQueueLen    128
+
+#define at_procTaskPrio        1
+#define at_procTaskQueueLen    64
+os_event_t    at_procTaskQueue[at_procTaskQueueLen];
+os_event_t    at_recvTaskQueue[at_recvTaskQueueLen];
+static void at_recvTask(os_event_t *events);
+
+static bool uart_receive_start = true;
+#define at_cmdLenMax 128
+
+static uint8_t at_cmdLine[at_cmdLenMax];
+
+static void ICACHE_FLASH_ATTR
+at_procTask(os_event_t *events)
+{
+	uart_recv_line_cb(at_cmdLine);
+	at_state = at_statRecving;
+	uart_receive_start = true;
+}
+
+static void ICACHE_FLASH_ATTR ///////
+at_recvTask(os_event_t *events)
+{
+  static uint8_t atHead[2];
+  static uint8_t *pCmdLine;
+  uint8_t temp;
+
+	while(READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S))
+	{
+		WRITE_PERI_REG(0X60000914, 0x73); //WTD
+		temp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
+		if(uart_receive_start) {
+			pCmdLine = at_cmdLine;
+			uart_receive_start = false;
+		}
+
+		switch(at_state)
+		    {
+		    case at_statRecving:
+		    	if(temp == '\n')
+				{
+					*pCmdLine = '\0';
+					pCmdLine++;
+					system_os_post(at_procTaskPrio, 0, 0);
+					at_state = at_statProcess;
+				}
+		    	*pCmdLine = temp;
+		    	pCmdLine++;
+		    	break;
+		    case at_statProcess: // TODO create a buffer for char which still commin in
+		    	os_printf("Wait... not finished yet...\n");
+		    	break;
+		    default:
+		    	break;
+		    }
+
+
+	}
+	if(UART_RXFIFO_FULL_INT_ST == (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST))
+	{
+	  WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
+	}
+	else if(UART_RXFIFO_TOUT_INT_ST == (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_TOUT_INT_ST))
+	{
+	  WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_TOUT_INT_CLR);
+	}
+	ETS_UART_INTR_ENABLE();
+
+
+}
+
+
+LOCAL void uart0_rx_intr_handler(void *para)
+{
+  uint8 RcvChar;
+  uint8 uart_no = UART0;//UartDev.buff_uart_no;
+
+  if(UART_FRM_ERR_INT_ST == (READ_PERI_REG(UART_INT_ST(uart_no)) & UART_FRM_ERR_INT_ST))
+  {
+    os_printf("FRM_ERR\r\n");
+    WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_FRM_ERR_INT_CLR);
+  }
+  if(UART_RXFIFO_FULL_INT_ST == (READ_PERI_REG(UART_INT_ST(uart_no)) & UART_RXFIFO_FULL_INT_ST))
+  {
+    ETS_UART_INTR_DISABLE();/////////
+    system_os_post(at_recvTaskPrio, 0, 0);
+  }
+  else if(UART_RXFIFO_TOUT_INT_ST == (READ_PERI_REG(UART_INT_ST(uart_no)) & UART_RXFIFO_TOUT_INT_ST))
+  {
+    ETS_UART_INTR_DISABLE();/////////
+
+    system_os_post(at_recvTaskPrio, 0, 0);
+
+  }
+
+}
+
+
 /******************************************************************************
  * FunctionName : uart_init
  * Description  : user interface for init uart
@@ -180,9 +290,11 @@ uart0_tx_buffer(char *buf)
 void ICACHE_FLASH_ATTR
 uart_init(UartBautRate uart0_br, uart_recv_line uart_recv_line_cb_tmp, bool debugprint)
 {
-    // rom use 74880 baut_rate, here reinitialize
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
+    system_os_task(at_recvTask, at_recvTaskPrio, at_recvTaskQueue, at_recvTaskQueueLen);
+    system_os_task(at_procTask, at_procTaskPrio, at_procTaskQueue, at_procTaskQueueLen);
+    at_state = at_statRecving;
     char* buff = (UartDev.rcv_buff.pRcvMsgBuff);
     os_memset(buff, 0, RX_BUFF_SIZE);
     ETS_UART_INTR_ENABLE();

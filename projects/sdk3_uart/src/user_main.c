@@ -55,15 +55,14 @@ void SendBroadcast(void * data) {
 
 void handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
 	uart0_tx_buffer(p->payload);
-	uart0_tx_buffer("\r\n");
+	uart0_tx_buffer("\n");
 	pbuf_free(p);
 }
 
 void uart_receive(char * line) {
 	send_to_all(line, port);
-	SendBroadcast(line);
+	//SendBroadcast(line);
 }
-
 
 void init_udp() {
 	err_t err;
@@ -89,17 +88,21 @@ void init_udp() {
 static struct softap_config apconf;
 
 void user_init(void) {
-	char * ap = "Willem";
+	char * ap = "SKUNK";
 	char * pass = "00000000";
 	uart_init(BIT_RATE_115200, uart_receive, false);
+	system_set_os_print(0);
 	os_printf("\nUart init done... \n");
 
 
 	wifi_softap_get_config(&apconf);
+	memset(apconf.ssid, 0, 32);
+	memset(apconf.password, 0, 64);
+
 	os_strncpy((char*)apconf.ssid, ap, strlen(ap));
 	os_strncpy((char*)apconf.password, pass, strlen(pass));
 	apconf.authmode = AUTH_WPA_WPA2_PSK;
-	apconf.max_connection = 2;
+	apconf.max_connection = 20;
 	apconf.ssid_hidden = 0;
 	wifi_softap_set_config(&apconf);
 
