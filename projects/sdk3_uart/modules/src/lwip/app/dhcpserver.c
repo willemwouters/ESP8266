@@ -811,22 +811,27 @@ void ICACHE_FLASH_ATTR dhcps_stop(void)
 	udp_remove(pcb_dhcps);
 }
 
-
-void send_to_one(void * data, ip_addr_t * ipSend, int port) {
+void send_to_one(void * data, ip_addr_t * ipSend, int port, int retry) {
 	struct pbuf* pBuffer;
+
     struct udp_pcb * pCon = NULL;
 	err_t err;
 	pCon = udp_new();
 	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
 	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
 	err = udp_sendto(pCon, pBuffer, ipSend, port);
-	if(err != 0) {
-		os_printf("ERROR SENDING %d", err);
-		os_printf(IPSTR, IP2STR(ipSend));
-		uart0_tx_buffer("\r\n");
-	}
 	pbuf_free(pBuffer);
 	udp_remove(pCon);
+	if(err != 0 && retry < 2) {
+		retry++;
+		uart0_tx_buffer("ERROR SENDING \r\n");
+		os_printf(IPSTR, IP2STR(ipSend));
+		os_printf("tried it: %d\r\n", retry);
+		send_to_one(data, ipSend, port, retry);
+
+	} else if(retry == 2) {
+		os_printf("Giving up tried it: %d\r\n", retry);
+	}
 }
 
 void send_to_all(char * data, int port) {
@@ -836,7 +841,7 @@ void send_to_all(char * data, int port) {
 	pnode = plist;
 	while (pnode != NULL) {
 		pdhcps_pool = pnode->pnode;
-		send_to_one(data, &pdhcps_pool->ip, port);
+		send_to_one(data, &pdhcps_pool->ip, port, 0);
 		pnode = pnode ->pnext;
 	}
 }

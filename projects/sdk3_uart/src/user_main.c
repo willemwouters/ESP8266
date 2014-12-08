@@ -90,8 +90,8 @@ static struct softap_config apconf;
 void user_init(void) {
 	char * ap = "SKUNK";
 	char * pass = "00000000";
-	uart_init(BIT_RATE_115200, uart_receive, false);
-	system_set_os_print(0);
+	uart_init(BIT_RATE_115200, uart_receive, true);
+	system_set_os_print(1);
 	os_printf("\nUart init done... \n");
 
 

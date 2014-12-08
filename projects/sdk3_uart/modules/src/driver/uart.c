@@ -233,6 +233,8 @@ at_recvTask(os_event_t *events)
 		    	break;
 		    case at_statProcess: // TODO create a buffer for char which still commin in
 		    	os_printf("Wait... not finished yet...\n");
+		    	ETS_UART_INTR_ENABLE();
+		    	return;
 		    	break;
 		    default:
 		    	break;
