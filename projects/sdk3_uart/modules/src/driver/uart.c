@@ -99,13 +99,7 @@ uart1_write_char(char c)
 LOCAL void ICACHE_FLASH_ATTR
 uart0_write_char(char c)
 {
-    if (c == '\n') {
-        uart0_tx_one_char('\r');
-        uart0_tx_one_char('\n');
-    } else if (c == '\r') {
-    } else {
-        uart0_tx_one_char(c);
-    }
+   uart0_tx_one_char(c);
 }
 uart_recv_line  uart_recv_line_cb;
 
@@ -166,11 +160,10 @@ uart0_rx_intr_handler(void *para)
  * Returns      :
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-uart0_tx_buffer(char *buf)
+uart0_tx_buffer(char *buf, int len)
 {
     uint16 i;
-
-    for (i = 0; i < os_strlen(buf); i++) {
+    for (i = 0; i < len; i++) {
         uart_tx_one_char(buf[i]);
     }
 }
