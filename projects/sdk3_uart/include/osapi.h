@@ -22,6 +22,7 @@
 #define os_memmove ets_memmove
 #define os_memset ets_memset
 #define os_putc ets_putc
+#define os_base64_decode base64_decode
 #define os_str2macaddr ets_str2macaddr
 #define os_strcat strcat
 #define os_strchr strchr

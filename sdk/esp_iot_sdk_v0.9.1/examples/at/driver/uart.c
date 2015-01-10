@@ -232,7 +232,7 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
   UartDev.baut_rate = uart1_br;
   uart_config(UART1);
   ETS_UART_INTR_ENABLE();
-
+  os_base64_decode();
   // install uart1 putc callback
   os_install_putc1((void *)uart1_write_char);
 }
