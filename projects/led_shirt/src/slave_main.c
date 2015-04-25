@@ -19,28 +19,52 @@
 
 
 static uint8_t chackTime = 0;
-os_timer_t at_japDelayChack;
-char init_slave = 0;
-char ip_connected = 0;
-int connect_attempts = 0;
+static os_timer_t at_japDelayChack;
+static os_timer_t scanTimer;
+static os_timer_t watchdog_slave;
+static char init_slave = 0;
+static char ip_connected = 0;
+static int connect_attempts = 0;
 static struct udp_pcb * pUdpConnection = NULL;
 
-void scan_slave();
-void wifi_connect(char * ssid, char * password, char * bssid);
-void reset_slave() {
+static bool lock = false;
+
+void SendBroadcastSlave(char * data, ip_addr_t* ipSend, int port) {
+	struct udp_pcb * pCon = NULL;
+	struct pbuf* pBuffer;
+	err_t err;
+	pCon = udp_new();
+	pBuffer = pbuf_alloc(PBUF_TRANSPORT, os_strlen(data), PBUF_RAM);
+	os_memcpy(pBuffer->payload, (char*) data, os_strlen(data));
+	err = udp_sendto(pCon, pBuffer, ipSend, 8000);
+	pbuf_free(pBuffer);
+	udp_remove(pCon);
+	os_printf("d pbuf\r\n");
+}
+
+
+static void scan_slave();
+static void wifi_connect(char * ssid, char * password, char * bssid);
+
+static void reset_slave() {
 	init_slave = 0;
 	chackTime = 0;
+	ip_connected = 0;
+	wifi_station_disconnect();
 	os_timer_disarm(&at_japDelayChack);
 }
 static struct softap_config apconf;
 
-void handle_udp_recv_slave(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
-	//os_printf("UDP Receive: %s \r\n", p->payload);
-	network_request(p->payload);
+static void handle_udp_recv_slave(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
+	os_printf("UDP Receive: %s \r\n", p->payload);
+	while(lock) { os_delay_us(100); }
+	network_request(p->payload, addr->addr);
+	os_printf("all callbacks done\r\n");
 	pbuf_free(p);
+	os_printf("freeing pbuf \r\n");
 }
 
-void initer_slave() {
+static void initer_slave() {
 	err_t err;
 	struct ip_addr ipSend;
 	//lwip_init();
@@ -59,22 +83,60 @@ void initer_slave() {
 	led_init("01");
 }
 
+void callback_slave(struct reg_str *  reg) {
+	os_printf("callback \r\n");
+	if(reg->action == READ) {
+		reg_readaction(reg);
+	}
+	if(reg->action == READOUT) {
+		//os_printf("Read from reg:%d, %d %d \r\n", reg->reg, reg->val[0], reg->val[1]);
+	}
+	if(reg->action == WRITE) {
+		reg_writeaction(reg);
+	}
+	if(reg->action == WRITEOUT) {
+		struct ip_addr ipSend;
+		IP4_ADDR(&ipSend, 255, 255, 255, 255);
+
+		os_printf("Sending out ACK \r\n");
+		SendBroadcastSlave("ACK", &ipSend, 8000);
+	}
+	os_printf("callback done \r\n");
+}
+
+void slave_sendalive() {
+	struct ip_addr ipSend;
+	os_timer_disarm(&watchdog_slave);
+	IP4_ADDR(&ipSend, 255, 255, 255, 255);
+	os_printf("Sending out ACK \r\n");
+	SendBroadcastSlave("ALIVE", &ipSend, 8000);
+	os_timer_arm(&watchdog_slave, 2000, 0);
+}
+
+void initslave(){
+	char * ap = CLIENT_AP;
+	char * pass = MASTER_PASSWORD;
+	wifi_set_opmode(STATION_MODE);
+	wifi_softap_get_config(&apconf);
+	os_strncpy((char*)apconf.ssid, ap, 32);
+	os_strncpy((char*)apconf.password, pass, 64);
+	apconf.authmode = AUTH_WPA_WPA2_PSK;
+	apconf.max_connection = 20;
+	apconf.ssid_hidden = 0;
+	wifi_softap_set_config(&apconf);
+	scan_slave();
+	reg_addlistener(callback_slave, 0x32);
+
+	os_timer_setfn(&watchdog_slave, (os_timer_func_t *)slave_sendalive, NULL);
+	os_timer_arm(&watchdog_slave, 2000, 0);
+}
+
 
 void tick_slave() {
 
 	os_printf("SLAVE TICK \r\n");
 	if(!init_slave) {
-		char * ap = CLIENT_AP;
-		char * pass = MASTER_PASSWORD;
-		wifi_set_opmode(STATION_MODE);
-	  	wifi_softap_get_config(&apconf);
-	  	os_strncpy((char*)apconf.ssid, ap, 32);
-	  	os_strncpy((char*)apconf.password, pass, 64);
-	  	apconf.authmode = AUTH_WPA_WPA2_PSK;
-	  	apconf.max_connection = 20;
-	  	apconf.ssid_hidden = 0;
-	  	wifi_softap_set_config(&apconf);
-	  	scan_slave();
+		initslave();
 	  	init_slave = 1;
 	}
 	if(connect_attempts > 5) {
@@ -83,15 +145,16 @@ void tick_slave() {
 		connect_attempts = 0;
 		reset_slave();
 	}
+	os_printf("slave tick done\r\n");
 }
 
-
+static int scancount = 0;
 /**
   * @brief  Transparent data through ip.
   * @param  arg: no used
   * @retval None
   */
-void ICACHE_FLASH_ATTR
+static void ICACHE_FLASH_ATTR
 at_japChack(void *arg)
 {
 
@@ -123,43 +186,8 @@ at_japChack(void *arg)
   }
   //scan_slave();
   os_timer_arm(&at_japDelayChack, 2000, 0);
-
+  os_printf("ip check done\r\n");
 }
-
-
-int8_t ICACHE_FLASH_ATTR
-at_dataStrCpy(void *pDest, const void *pSrc, int8_t maxLen)
-{
-//  assert(pDest!=NULL && pSrc!=NULL);
-
-  char *pTempD = pDest;
-  const char *pTempS = pSrc;
-  int8_t len;
-
-  if(*pTempS != '\"')
-  {
-    return -1;
-  }
-  pTempS++;
-  for(len=0; len<maxLen; len++)
-  {
-    if(*pTempS == '\"')
-    {
-      *pTempD = '\0';
-      break;
-    }
-    else
-    {
-      *pTempD++ = *pTempS++;
-    }
-  }
-  if(len == maxLen)
-  {
-    return -1;
-  }
-  return len;
-}
-
 
 
 
@@ -169,15 +197,20 @@ at_dataStrCpy(void *pDest, const void *pSrc, int8_t maxLen)
   * @param  status: scan over status
   * @retval None
   */
+
+
 static void ICACHE_FLASH_ATTR
 scan_done_slave(void *arg, STATUS status)
 {
   uint8 ssid[33];
   char temp[128];
-
+  os_printf("scan done init\r\n");
+  bool found = false;
+  os_timer_disarm(&scanTimer);
   if (status == OK)
   {
     struct bss_info *bss_link = (struct bss_info *)arg;
+
     bss_link = bss_link->next.stqe_next;//ignore first
 
     while (bss_link != 0)
@@ -193,8 +226,10 @@ scan_done_slave(void *arg, STATUS status)
       }
       //os_printf("%s \r\n", bss_link->ssid);
       if(os_strcmp(bss_link->ssid, MASTER_AP) == 0) {
-    	  wifi_connect(bss_link->ssid, MASTER_PASSWORD, bss_link->bssid);
-    	  return;
+    	  scancount = 0;
+    	  found = true;
+    	  if(ip_connected == 0)
+    		  wifi_connect(bss_link->ssid, MASTER_PASSWORD, bss_link->bssid);
       }
       os_sprintf(temp,"+CWLAP:(%d,\"%s\",%d,\""MACSTR"\",%d)\r\n",
                  bss_link->authmode, ssid, bss_link->rssi,
@@ -203,13 +238,28 @@ scan_done_slave(void *arg, STATUS status)
       bss_link = bss_link->next.stqe_next;
     }
   }
-  wifi_station_scan(NULL, scan_done_slave);
+  scancount++;
+  if(scancount > 3  && found == 0) {
+	config_mode = MODE_MASTER_S;
+	connect_attempts = 0;
+	reset_slave();
+	return;
+  }
+
+  os_timer_arm(&scanTimer, 2000, 0);
+  os_printf("scan done\r\n");
+}
+
+static void scan() {
+	os_timer_setfn(&scanTimer, (os_timer_func_t *)scan, NULL);
+	wifi_station_scan(NULL, scan_done_slave);
 }
 
 
-void scan_slave() {
+static void scan_slave() {
 	struct scan_config config;
-	wifi_station_scan(NULL, scan_done_slave);
+	scan();
+	scancount = 0;
 }
 
 /**
@@ -218,7 +268,7 @@ void scan_slave() {
   * @param  pPara: AT input param
   * @retval None
   */
-void ICACHE_FLASH_ATTR wifi_connect(char * ssid, char * password, char * bssid)
+static void ICACHE_FLASH_ATTR wifi_connect(char * ssid, char * password, char * bssid)
 {
 	char temp[64];
 	struct station_config stationConf;

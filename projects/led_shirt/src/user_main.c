@@ -44,31 +44,6 @@ void tickCb(void * arg) {
 
 }
 
-void StartupCb(void * arg) {
-	config_mode = MODE_CONNECTING;
-	wifi_set_opmode(STATION_MODE);
-	os_printf("WiFi AP up\r\n");
-	os_timer_disarm(&tickTimer);
-	os_timer_setfn(&tickTimer, tickCb, NULL);
-	os_printf("Main timer running\r\n");
-	os_timer_arm(&tickTimer, 1000, 0);
-}
-extern void sendtoall(char * data, int port);
-void callback(struct reg_str *  reg) {
-	if(reg->action == READ) {
-		reg_readaction(reg);
-	}
-	if(reg->action == READOUT) {
-		//os_printf("Read from reg:%d, %d %d \r\n", reg->reg, reg->val[0], reg->val[1]);
-	}
-	if(reg->action == WRITE) {
-		reg_writeaction(reg);
-	}
-	if(reg->action == WRITEOUT) {
-		sendtoall("ACK", 8000);
-		//os_printf("Wrote to reg:%d, %d %d \r\n", reg->reg, reg->val[0], reg->val[0]);
-	}
-}
 
 
 void user_init(void) {
@@ -76,26 +51,20 @@ void user_init(void) {
 	uint16_t freq = 100;
 	pwm_init(freq, PWM_CH);
 	pwm_start();
-	static struct softap_config apconf;
-		char * ap = CLIENT_AP;
-		char * pass = MASTER_PASSWORD;
-		wifi_set_opmode(STATION_MODE);
-		wifi_softap_get_config(&apconf);
-		os_strncpy((char*)apconf.ssid, ap, 32);
-		os_strncpy((char*)apconf.password, pass, 64);
-		apconf.authmode = AUTH_WPA_WPA2_PSK;
-		apconf.max_connection = 20;
-		apconf.ssid_hidden = 0;
-		wifi_softap_set_config(&apconf);
-
+	wifi_station_disconnect();
 	reset_register();
 	uart_init(BIT_RATE_115200, ReceiveUART, true); // baudrate, callback, eolchar, printftouart
 	os_printf("Starting up....\r\n");
 	reg_init();
 
-	reg_addlistener(callback, 0x32);
+
+	config_mode = MODE_CONNECTING;
+	wifi_set_opmode(STATION_MODE);
+	os_printf("WiFi AP up\r\n");
 	os_timer_disarm(&tickTimer);
-	os_timer_setfn(&tickTimer, StartupCb, NULL);
-	os_timer_arm(&tickTimer, 5000, 0);
+	os_timer_setfn(&tickTimer, tickCb, NULL);
+	os_printf("Main timer running\r\n");
+	os_timer_arm(&tickTimer, 1000, 0);
+	//led_init("00");
 }
 

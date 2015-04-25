@@ -30,7 +30,7 @@ http://www.amazon.com/exec/obidos/ASIN/0387001638/thealgorithmrepo/
 
 #include "queue.h"
 
-
+static char queue_lock = 0;
 void init_queue(queue *q)
 {
         q->first = 0;
@@ -44,9 +44,12 @@ void enqueue(queue *q, void* x)
         	//printf("Warning: queue overflow enqueue x=%d\n",x);
         }
         else {
+        		while(queue_lock);
+        		queue_lock = 1;
                 q->last = (q->last+1) % QUEUESIZE;
                 q->q[ q->last ] = x;
                 q->count = q->count + 1;
+                queue_lock = 0;
         }
 }
 
@@ -58,9 +61,12 @@ void* dequeue(queue *q)
         	//printf("Warning: empty queue dequeue.\n");
         }
         else {
-                x = q->q[ q->first ];
-                q->first = (q->first+1) % QUEUESIZE;
-                q->count = q->count - 1;
+			while(queue_lock);
+			queue_lock = 1;
+			x = q->q[ q->first ];
+			q->first = (q->first+1) % QUEUESIZE;
+			q->count = q->count - 1;
+			queue_lock = 0;
         }
 
         return(x);

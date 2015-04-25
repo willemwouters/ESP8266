@@ -16,6 +16,7 @@
 #include "driver/uart.h"
 #include "reg_handler.h"
 #include "driver/pwm.h"
+#include "log.h"
 
 static u8 ledvalr = 0;
 static u8 ledvalg = 0;
@@ -61,8 +62,8 @@ char name[2];
 
 
 void led_blinker() {
+	log_d(LOG_VERBOSE, "blinker timer\r\n");
 	if(colorrandom == 1) {
-
 		if(colorrandomrdir == 0) { colorrandomr=colorrandomr+(1+colorrandomspeed); } else { colorrandomr=colorrandomr-(1+colorrandomspeed); }
 		if(colorrandomr > 250)  { colorrandomrdir = 1; colorrandomr = 250;}
 		if(colorrandomr <= 0) { colorrandomrdir = 0; colorrandomr = 0;}
@@ -111,16 +112,16 @@ void led_blinker() {
 		blinkspeed = 10;
 	}
 	int timer = blinkspeed;
-	if(timer == 0) timer = 10;
+	if(timer == 0) timer = 100;
 	os_timer_arm(&blinkTimer, timer, 0);
 }
 
 
 void led_regcallback(struct reg_str *  reg) {
-	if(reg->destination[0] != name[0] || reg->destination[1] != name[1]) {
+	if(reg->destination[0] != name[0] || reg->destination[1] != name[1] || reg->action != WRITE) {
 		return;
 	}
-
+	os_printf("led callback \r\n");
 	if(reg->reg == COLOR_REG && reg->action == WRITE) {
 		ledvalr = reg->val[0];
 		ledvalg = reg->val[1];

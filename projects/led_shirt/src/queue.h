@@ -36,7 +36,7 @@ http://www.amazon.com/exec/obidos/ASIN/0387001638/thealgorithmrepo/
 */
 
 
-#define QUEUESIZE       5000
+#define QUEUESIZE       50
 
 typedef struct {
         void* q[QUEUESIZE+1];		/* body of queue */

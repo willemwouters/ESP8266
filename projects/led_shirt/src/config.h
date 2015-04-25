@@ -17,8 +17,9 @@
 #define MASTER_PASSWORD "00000000"
 
 #define TICK_SPEED_CONNECTING 5000
-#define TICK_SPEED_MASTER 500
+#define TICK_SPEED_MASTER 100
 #define TICK_SPEED_SLAVE 500
+#define LOG_LEVEL 1
 
 int config_mode;
 

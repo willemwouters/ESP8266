@@ -17,17 +17,6 @@ typedef void (*callback_type)(struct reg_str *);
 
 static queue read_queue;
 
-#define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
-#define BYTETOBINARY(byte)  \
-  (byte & 0x80 ? 1 : 0), \
-  (byte & 0x40 ? 1 : 0), \
-  (byte & 0x20 ? 1 : 0), \
-  (byte & 0x10 ? 1 : 0), \
-  (byte & 0x08 ? 1 : 0), \
-  (byte & 0x04 ? 1 : 0), \
-  (byte & 0x02 ? 1 : 0), \
-  (byte & 0x01 ? 1 : 0)
-
 
 int check_error(char * dat) {
 	if(dat == NULL) {
@@ -89,7 +78,8 @@ void reg_callback_free(struct reg_callback * c) {
 
 void reg_handler(struct reg_str * regaction) {
 	int i = 0;
-
+	//led_regcallback(regaction);
+	//callback_master(regaction);
 	for(i = 0; i < read_queue.count; i++) {
 		struct reg_callback* rc = read_queue.q[i];
 		if(rc->reg == regaction->reg || rc->reg > 0x20) {
@@ -98,7 +88,7 @@ void reg_handler(struct reg_str * regaction) {
 	}
 }
 
-void network_request(char * data) {
+void network_request(char * data,  uint32 ip) {
 // AP:READ:0x02:0xFFFF
 	struct reg_str * reg_action;
 	int i;
@@ -130,8 +120,9 @@ void network_request(char * data) {
 		reg_action->destination[os_strlen(dest)] = 0;
 		reg_action->action = reg_getaction(action);
 		reg_action->reg = reg;
+		reg_action->addr = ip;
 		memcpy(reg_action->val, val, 4);
-		os_printf("We got a valid network register request: %s:%d:%x:"BYTETOBINARYPATTERN" "BYTETOBINARYPATTERN"\r\n", reg_action->destination, reg_action->action, reg_action->reg, BYTETOBINARY(reg_action->val[0]), BYTETOBINARY(reg_action->val[1]));
+		//os_printf("We got a valid network register request: %s:%d:%x:"BYTETOBINARYPATTERN" "BYTETOBINARYPATTERN"\r\n", reg_action->destination, reg_action->action, reg_action->reg, BYTETOBINARY(reg_action->val[0]), BYTETOBINARY(reg_action->val[1]));
 		reg_handler(reg_action);
 		reg_free(reg_action);
 	}

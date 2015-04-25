@@ -12,10 +12,10 @@ struct pwm_single_param {
 struct pwm_param {
     uint16 period;
     uint16 freq;
-    uint8  duty[PWM_CHANNEL];
+    uint16  duty[PWM_CHANNEL];
 };
 
-#define PWM_DEPTH 255
+#define PWM_DEPTH 65535
 
 #define PWM_1S 1000000
 
@@ -31,11 +31,11 @@ struct pwm_param {
 #define PWM_2_OUT_IO_NUM 13
 #define PWM_2_OUT_IO_FUNC  FUNC_GPIO13
 
-void pwm_init(uint16 freq, uint8 *duty);
+void pwm_init(uint16 freq, uint16 *duty);
 void pwm_start(void);
 
-void pwm_set_duty(uint8 duty, uint8 channel);
-uint8 pwm_get_duty(uint8 channel);
+void pwm_set_duty(uint16 duty, uint8 channel);
+uint16 pwm_get_duty(uint8 channel);
 void pwm_set_freq(uint16 freq);
 uint16 pwm_get_freq(void);
 #endif

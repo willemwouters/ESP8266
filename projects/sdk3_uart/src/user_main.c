@@ -86,8 +86,6 @@ void init_udp() {
 }
 
 
-static struct softap_config apconf;
-
 void user_init(void) {
 	char * ap = "SKUNKWILLEM";
 	char * pass = "00000000";
