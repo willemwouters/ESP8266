@@ -1,0 +1,29 @@
+AT_v0.22 release note
+
+Fix bug:
+1¡¢Wrong return value of AT+CIPSTATUS£»
+2¡¢wdt rest after ¡°0,CONNECT FAIL¡±£»
+
+Add AT commands£º
+1¡¢	Change AT commands of which configuration will store into flash to two kinds£º
+XXX_CUR: current£¬only set configuration£¬won¡¯t save it into Flash£»
+XXX_DEF: default, set configuration and save it to Flash
+2¡¢Add SmartConfig in AT£º
+AT+CWSTARTSMART/AT+CWSTOPSMART: start / stop SmartConfig
+Notice£ºplease refer to the document£¬ call  ¡°AT+CWSTOPSMART¡± to stop SmartConfig first since ¡°AT+CWSTARTSMART¡±£¬then call other AT commands. Don¡¯t call any other AT commands during SmartConfig. 
+2¡¢	AT+SAVETRANSLINK£ºsave transparent transmission link to Flash£»
+Note£ºAT+CIPMODE=1 set to enter transparent transmission mode£¬won¡®t save to Flash.
+
+Add AT APIs
+1¡¢at_customLinkMax£º set the max link that allowed, most can be 10; if you want to set it, please set it before at_init; if you didn¡¯t set it, the max link allowed is 5 by default. 
+2¡¢at_enter_special_state/ at_leave_special_state£ºEnter/leave AT processing state. In processing state, AT core will return ¡°busy¡± for any further AT commands. 
+3¡¢at_set_custom_info£ºset custom version information of AT which can be got by AT+GMR£»
+4¡¢at_get_version£ºget version information of AT lib .
+
+Optimize
+1¡¢	Add UDP remote ip and remote port is allowed to be parameters of ¡°AT+CIPSEND¡±
+2¡¢	Move ¡°AT+CIUPDATE¡± from lib to AT demo£¨\esp_iot_sdk\examples\at£©, AT demo shows how to upgrade AT firmware from a local server.Notice that AT upgrade the bin files name have to be "user1.bin" and "user2.bin".
+3¡¢	Optimize ¡°AT+CIPSTA¡±, add gateway and netmask as parameters 
+4¡¢	Optimize transparent transmission.
+
+

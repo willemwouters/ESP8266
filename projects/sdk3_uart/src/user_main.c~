@@ -85,7 +85,6 @@ void init_udp() {
 	os_timer_disarm(&waitTimer);
 }
 
-static struct softap_config apconf;
 
 void user_init(void) {
 	char * ap = "SKUNKWILLEM";

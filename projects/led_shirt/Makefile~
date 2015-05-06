@@ -23,7 +23,7 @@ EXTRA_INCDIR	= \
 		$(TOOLCHAIN_INCLUDE)
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal pp phy net80211 lwip wpa ssl main driver
+LIBS		= c hal pp phy net80211 lwip wpa ssl main driver
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -ggdb -std=c99 -Wall -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
