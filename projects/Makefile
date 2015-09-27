@@ -28,11 +28,15 @@ EXTRA_INCDIR	= \
 		$(SDK_INCLUDE) \
 		$(TOOLCHAIN_INCLUDE)
 
+
 # libraries used in this project, mainly provided by the SDK
 LIBS		:= $(CUSTOM_LIBS) c gcc gcov hal pp phy $(LIBS) 
 
+ifeq	($(MAKECMDGOALS), small)
+	SMALLFLAGS =-DREALROWS=7
+endif
 # compiler flags using during compilation of source files
-CFLAGS		:= $(CFLAGS) -Os -ggdb -std=c99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		:= $(CFLAGS) $(SMALLFLAGS) -c -Os -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -68,10 +72,12 @@ SDK_LIBDIR_EXTRA	:= $(addprefix $(SDK_BASE)/../, $(CUSTOM_LIBS) )
 SDK_LIBDIR_EXTRA_L	:=  $(addsuffix /$(SDK_LIBDIR_ORI), $(SDK_LIBDIR_EXTRA))
 
 
-
+SDK_CLOSED_INCDIR := $(SDK_CLOSED)/include
 SDK_CLOSED_LIBDIR := $(SDK_CLOSED)/lib
 TOOLCHAIN_LIBDIR	:= $(addprefix $(TOOLCHAIN_BASE)/,$(TOOLCHAIN_LIBDIR)) -L$(TOOLCHAIN_BASE)/lib/gcc/
 
+
+SDK_CLOSED_INCDIR	:= $(addprefix -I,$(SDK_CLOSED_INCDIR)) 
 SDK_INCDIR	:= $(addprefix -I,$(SDK_INCLUDE))
 
 SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
@@ -98,12 +104,15 @@ vpath %.c $(SRC_DIR)
 define compile-objects
 $1/%.o: %.c
 	$(vecho) "CC $$<"
-	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
+	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(SDK_CLOSED_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
 .PHONY: all checkdirs clean
 
+small: all
+
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
+
 
 $(FW_FILE_1): $(TARGET_OUT) firmware
 	$(vecho) "FW $@"
