@@ -82,6 +82,9 @@ void readButton() {
 
 int state = 0;
 void test() {
+	 uint8 uart_buf[128]={0};
+		     uint16 len = 0;
+
 	os_timer_disarm(&writeudpTimer);
 	state = !state;
 	 PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
@@ -92,8 +95,17 @@ void test() {
 	// GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, 1 << 4);
 	 GPIO_OUTPUT_SET(GPIO_ID_PIN(5), 1);
 
-	 os_printf("WW SET %d \r\n", 1);
+
 	 os_timer_arm(&writeudpTimer, 100, 0);
+
+
+
+
+
+	     len = rx_buff_deq(uart_buf, 128 );
+	     os_printf("WW SET %s \r\n", uart_buf);
+	     //tx_buff_enq(uart_buf,len);
+
 }
 
 

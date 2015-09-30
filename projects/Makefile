@@ -14,7 +14,7 @@ BUILD_BASE	= build
 FW_BASE		= firmware
 
 ESPTOOL		?= esptool.py
-ESPPORT		?= /dev/ttyACM0
+ESPPORT		?= /dev/ttyUSB0
 
 FW_TOOL		?= /usr/bin/esptool
 TARGET		= simple_uart

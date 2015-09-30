@@ -24,7 +24,7 @@
 #define UART_TX_BUFFER_SIZE 256  //Ring buffer length of tx buffer
 #define UART_RX_BUFFER_SIZE 256 //Ring buffer length of rx buffer
 
-#define UART_BUFF_EN  0   //use uart buffer  , FOR UART0
+#define UART_BUFF_EN  1   //use uart buffer  , FOR UART0
 #define UART_SELFTEST  0  //set 1:enable the loop test demo for uart buffer, FOR UART0
 
 #define UART_HW_RTS   0   //set 1: enable uart hw flow control RTS, PIN MTDO, FOR UART0

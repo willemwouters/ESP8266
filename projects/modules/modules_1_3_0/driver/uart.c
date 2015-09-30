@@ -35,10 +35,6 @@ LOCAL struct UartBuffer* pRxBuffer = NULL;
 #define uart_recvTaskQueueLen    10
 os_event_t    uart_recvTaskQueue[uart_recvTaskQueueLen];
 
-#define uart_sendTaskPrio       1
-#define uart_sendTaskQueueLen    10   1
-os_event_t    uart_sendTaskQueue[uart_recvTaskQueueLen];
-
 #define DBG  
 #define DBG1 uart1_sendStr_no_wait
 #define DBG2 os_printf
@@ -225,6 +221,7 @@ uart0_rx_intr_handler(void *para)
     uint8 buf_idx = 0;
     uint8 temp,cnt;
     //RcvMsgBuff *pRxBuff = (RcvMsgBuff *)para;
+    
     	/*ATTENTION:*/
 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
@@ -249,11 +246,11 @@ uart0_rx_intr_handler(void *para)
 	/*ATTENTION:*/
 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-	//CLEAR_PERI_REG_MASK(UART_INT_ENA(UART0), UART_TXFIFO_EMPTY_INT_ENA);
+	CLEAR_PERI_REG_MASK(UART_INT_ENA(UART0), UART_TXFIFO_EMPTY_INT_ENA);
 	#if UART_BUFF_EN
 		tx_start_uart_buffer(UART0);
 	#endif
-        system_os_post(uart_recvTaskPrio, 1, 0);
+        //system_os_post(uart_recvTaskPrio, 1, 0);
         WRITE_PERI_REG(UART_INT_CLR(uart_no), UART_TXFIFO_EMPTY_INT_CLR);
         
     }else if(UART_RXFIFO_OVF_INT_ST  == (READ_PERI_REG(UART_INT_ST(uart_no)) & UART_RXFIFO_OVF_INT_ST)){
@@ -278,60 +275,23 @@ uart_test_rx()
     uint8 uart_buf[128]={0};
     uint16 len = 0;
     len = rx_buff_deq(uart_buf, 128 );
-
-	os_printf("Received stuff \r\n");
-
-	uart_busy = 1;
-	if(uart_recv_line_cb != 0)
-	uart_recv_line_cb(uart_buf);
-	uart_busy = 0;
     tx_buff_enq(uart_buf,len);
-
 }
 #endif
-
-
-static uint8_t uartReceiveBuffer[128];
-char uart_busy = 0;
-uart_recv_line  uart_recv_line_cb = 0;
-char start_uart = 1;
-static void ICACHE_FLASH_ATTR
-uart_sendTask(os_event_t *events)
-{
-	uart_busy = 1;
-	if(uart_recv_line_cb != 0)
-	uart_recv_line_cb(uartReceiveBuffer);
-	start_uart = 1;
-	uart_busy = 0;
-}
-
 
 LOCAL void ICACHE_FLASH_ATTR ///////
 uart_recvTask(os_event_t *events)
 {
-    static uint8_t *pCmdLine;
-    if(events->sig == 0 && uart_busy == 0){
+    if(events->sig == 0){
     #if  UART_BUFF_EN  
         Uart_rx_buff_enq();
     #else
         uint8 fifo_len = (READ_PERI_REG(UART_STATUS(UART0))>>UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
         uint8 d_tmp = 0;
         uint8 idx=0;
-		if(start_uart) {
-		pCmdLine = uartReceiveBuffer;
-		start_uart =0;
-		}
-
         for(idx=0;idx<fifo_len;idx++) {
             d_tmp = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-			if(d_tmp == '\n' || d_tmp == '\r')
-			{
-				*pCmdLine = '\0';
-				pCmdLine++;
-				system_os_post(uart_sendTaskPrio, 0, 0);
-			}
-			*pCmdLine = d_tmp;
-		    pCmdLine++;
+            uart_tx_one_char(UART0, d_tmp);
         }
         WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
         uart_rx_intr_enable(UART0);
@@ -346,20 +306,12 @@ uart_recvTask(os_event_t *events)
     }
 }
 
-
-
-void ICACHE_FLASH_ATTR
-uart_setreceive_callback(uart_recv_line clb) {
-	uart_recv_line_cb = clb;
-}
-
 void ICACHE_FLASH_ATTR
 uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 {
     /*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
     system_os_task(uart_recvTask, uart_recvTaskPrio, uart_recvTaskQueue, uart_recvTaskQueueLen);  //demo with a task to process the uart data
-    system_os_task(uart_sendTask, uart_sendTaskPrio, uart_sendTaskQueue, uart_recvTaskQueueLen);  //demo with a task to
-
+    
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
     UartDev.baut_rate = uart1_br;
