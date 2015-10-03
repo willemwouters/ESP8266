@@ -10,7 +10,6 @@
 *******************************************************************************/
 #include "espressif/esp_common.h"
 
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -30,7 +29,7 @@ UART_SetBaudrate(uint8 uart_no, uint32 baud_rate)
 
 
 void ICACHE_FLASH_ATTR
-smartconfig_task(void *pvParameters)
+task(void *pvParameters)
 {
 	printf("SDK version:%s\n", system_get_sdk_version());
     vTaskDelete(NULL);
@@ -49,7 +48,7 @@ user_init(void)
 	UART_SetBaudrate(0,115200);
     printf("SDK version:%s\n", system_get_sdk_version());
     xTaskHandle xHandle = NULL;
-    xTaskCreate(smartconfig_task, "smartconfig_task", 256, NULL, 2, &xHandle);
+    xTaskCreate(task, "smartconfig_task", 256, NULL, 2, &xHandle);
 
 //    if( xHandle != NULL )
 //	{

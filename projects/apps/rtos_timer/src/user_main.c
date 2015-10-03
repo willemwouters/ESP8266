@@ -13,6 +13,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/timers.h"
 
 #include "lwip/sockets.h"
 #include "lwip/dns.h"
@@ -21,6 +22,7 @@
 #include "smartconfig.h"
 #include "espmissingincludes.h"
 
+static xTimerHandle timerHandle;
 
 void ICACHE_FLASH_ATTR
 UART_SetBaudrate(uint8 uart_no, uint32 baud_rate)
@@ -30,10 +32,9 @@ UART_SetBaudrate(uint8 uart_no, uint32 baud_rate)
 
 
 void ICACHE_FLASH_ATTR
-smartconfig_task(void *pvParameters)
+task(void *pvParameters)
 {
 	printf("SDK version:%s\n", system_get_sdk_version());
-    vTaskDelete(NULL);
 }
 
 
@@ -49,10 +50,18 @@ user_init(void)
 	UART_SetBaudrate(0,115200);
     printf("SDK version:%s\n", system_get_sdk_version());
     xTaskHandle xHandle = NULL;
-    xTaskCreate(smartconfig_task, "smartconfig_task", 256, NULL, 2, &xHandle);
+    // Create Timer (Trigger a measurement every second)
+	timerHandle = xTimerCreate((signed char *)"BMP180 Trigger", 1000/portTICK_RATE_MS, pdTRUE, NULL, task);
 
-//    if( xHandle != NULL )
-//	{
-//	 vTaskDelete( xHandle );
-//	}
+	if (timerHandle != NULL)
+	{
+		if (xTimerStart(timerHandle, 0) != pdPASS)
+		{
+			printf("%s: Unable to start Timer ...\n", __FUNCTION__);
+		}
+	}
+	else
+	{
+		printf("%s: Unable to create Timer ...\n", __FUNCTION__);
+	}
 }
