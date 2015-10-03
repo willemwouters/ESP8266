@@ -39,7 +39,9 @@ ifeq	($(MAKECMDGOALS), small)
 	SMALLFLAGS =-DREALROWS=7
 endif
 # compiler flags using during compilation of source files
-CFLAGS		:= $(CFLAGS) $(SMALLFLAGS) -c -Os -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		:= $(CFLAGS) $(SMALLFLAGS) -c -Os -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib  -fno-exceptions -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+
+CPPFLAGS := -g -O2 -Wpointer-arith -Wundef -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -fno-exceptions -fno-rtti  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -164,7 +166,7 @@ clean:
 	$(Q) rm -f $(FW_FILE_2)
 	$(Q) rm -rf $(FW_BASE)
 
-clean_modules:
+clean_modules: clean
 	cd ../../modules && make clean
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))

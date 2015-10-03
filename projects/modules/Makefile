@@ -7,7 +7,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 TOOLCHAIN_BASE := $(ROOT_DIR)/../../
 
-include $(PDIR)../settings.mk
+include $(PDIR)../modules.mk
 
 #AR = xtensa-lx106-elf-ar
 #CC = xtensa-lx106-elf-cc
@@ -46,7 +46,7 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
-CCFLAGS += 			\
+CCFLAGS := 			\
 	-g			\
 	-O2			\
 	-Wpointer-arith		\
