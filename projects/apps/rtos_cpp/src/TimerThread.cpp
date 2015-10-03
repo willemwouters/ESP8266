@@ -18,7 +18,5 @@ void TimerThread::run(void * p) {
 		Thread::sleep(100);
 	}
 }
-TimerThread::~TimerThread() {
-	// TODO Auto-generated destructor stub
-}
+TimerThread::~TimerThread() {}
 

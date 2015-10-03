@@ -25,8 +25,7 @@ UserMain::UserMain() {
 	t->start();
 
 	UdpServer* u = new UdpServer();
-		u->start();
-
+	u->start();
 
 }
 

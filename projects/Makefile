@@ -1,5 +1,8 @@
 # Base directory for the compiler
-TOOLCHAIN_BASE :=$(TOOLCHAIN_BASE)bsp/xtensa-2
+ifndef TOOLCHAIN_CUSTOM
+    TOOLCHAIN_BASE :=$(TOOLCHAIN_BASE)/bsp/xtensa-2/
+endif
+
 SDK_CLOSED :=$(SDK_CLOSED)
 SDK_BASE :=$(SDK_BASE)
 TOOLCHAIN_INCLUDE ?= $(TOOLCHAIN_BASE)/include 
@@ -21,7 +24,7 @@ TARGET		= simple_uart
 export PATH := $(TOOLCHAIN_BASE)/bin:$(PATH)
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= src
+MODULES		= $(MODULES_USER) src
 
 # all MODULES/include will be included
 EXTRA_INCDIR	= \
@@ -56,6 +59,7 @@ FW_FILE_2_ARGS	= -es .irom0.text $@ -ec
 
 # select which tools to use as compiler, librarian and linker
 CC		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-gcc
+CPP		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-g++
 AR		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-ar
 LD		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-gcc
 
@@ -81,7 +85,11 @@ SDK_CLOSED_INCDIR	:= $(addprefix -I,$(SDK_CLOSED_INCDIR))
 SDK_INCDIR	:= $(addprefix -I,$(SDK_INCLUDE))
 
 SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
+SRCPP   := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
+
 OBJ		:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
+OBJPP	:= $(patsubst %.cpp,$(BUILD_BASE)/%.o,$(SRCPP))
+
 LIBS		:= $(addprefix -l,$(LIBS))
 APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
 TARGET_OUT	:= $(addprefix $(BUILD_BASE)/,$(TARGET).out)
@@ -96,12 +104,17 @@ FW_FILE_1	:= $(addprefix $(FW_BASE)/,$(FW_FILE_1).bin)
 FW_FILE_2	:= $(addprefix $(FW_BASE)/,$(FW_FILE_2).bin)
 
 Q :=
-vecho := @true
+vecho := @echo
 
 
 vpath %.c $(SRC_DIR)
+vpath %.cpp $(SRC_DIR)
 
 define compile-objects
+$1/%.o: %.cpp
+	$(vecho) "CC $$<"
+	$(Q) $(CPP) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(SDK_CLOSED_INCDIR) $(CPPFLAGS)  -c $$< -o $$@
+
 $1/%.o: %.c
 	$(vecho) "CC $$<"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(SDK_CLOSED_INCDIR) $(CFLAGS)  -c $$< -o $$@
@@ -126,7 +139,7 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"
 	$(Q) $(LD) -L$(SDK_LIBDIR) $(SDK_LIBDIR_EXTRA_L) -L$(TOOLCHAIN_LIBDIR) -L$(SDK_CLOSED_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
 
-$(APP_AR): $(OBJ)
+$(APP_AR): $(OBJPP) $(OBJ)
 	$(vecho) "AR $@"
 	$(Q) $(AR) cru $@ $^
 
