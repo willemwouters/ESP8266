@@ -1,5 +1,5 @@
 *.o
-*.a
 *.d
-.output
-.build
+*.output
+*.build
+*.out
