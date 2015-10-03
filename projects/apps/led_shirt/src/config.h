@@ -8,19 +8,33 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define MODE_CONNECTING 0
-#define MODE_SLAVE 1
-#define MODE_MASTER_S 2
-#define MODE_MASTER_C 3
-#define CLIENT_AP "CLIENT"
-#define MASTER_AP "WILLEM"
-#define MASTER_PASSWORD "00000000"
 
-#define TICK_SPEED_CONNECTING 5000
-#define TICK_SPEED_MASTER 100
-#define TICK_SPEED_SLAVE 500
-#define LOG_LEVEL 1
 
-int config_mode;
+#define NORMAL 1
+#define FLICKER 2
+#define FLICKER_BUFFER 3
+
+#if !defined(REALROWS)
+#define REALROWS 8
+#endif
+
+#define ROWS 8
+#define TEXTROWS 20
+
+#define TEXTHEIGHT 8
+
+#define BUFFERS 3
+#define COLUMNS 15
+#define COLORS 3
+
+#define VERBOSE 1
+#define OFF 0
+#define DEBUG_LEVEL_WRITE OFF
+#define DEBUG_LEVEL_READ OFF
+#define DEBUG_LEVEL VERBOSE
+
+#define FRAMESPEED 30
+
+#define FRAME_REFRESH_RETRYSPEED 100
 
 #endif /* CONFIG_H_ */
