@@ -30,7 +30,7 @@ EXTRA_INCDIR	= \
 
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		:= $(CUSTOM_LIBS) c gcc gcov hal pp phy $(LIBS) 
+LIBS		:= $(CUSTOM_LIBS)  $(LIBS) 
 
 ifeq	($(MAKECMDGOALS), small)
 	SMALLFLAGS =-DREALROWS=7
