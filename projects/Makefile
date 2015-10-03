@@ -69,7 +69,7 @@ BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
 
 SDK_LIBDIR		:= $(addprefix $(SDK_BASE)/, $(SDK_LIBDIR_ORI))
 SDK_LIBDIR_EXTRA	:= $(addprefix $(SDK_BASE)/../, $(CUSTOM_LIBS) )
-SDK_LIBDIR_EXTRA_L	:=  $(addsuffix /$(SDK_LIBDIR_ORI), $(SDK_LIBDIR_EXTRA))
+SDK_LIBDIR_EXTRA_L	:=  $(addsuffix /$(SDK_LIBDIR_ORI), -L$(SDK_LIBDIR_EXTRA))
 
 
 SDK_CLOSED_INCDIR := $(SDK_CLOSED)/include
@@ -124,7 +124,7 @@ $(FW_FILE_2): $(TARGET_OUT) firmware
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"
-	$(Q) $(LD) -L$(SDK_LIBDIR) -L$(SDK_LIBDIR_EXTRA_L) -L$(TOOLCHAIN_LIBDIR) -L$(SDK_CLOSED_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+	$(Q) $(LD) -L$(SDK_LIBDIR) $(SDK_LIBDIR_EXTRA_L) -L$(TOOLCHAIN_LIBDIR) -L$(SDK_CLOSED_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
 
 $(APP_AR): $(OBJ)
 	$(vecho) "AR $@"
