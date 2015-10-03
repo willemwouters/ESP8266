@@ -85,10 +85,14 @@ void refreshFrameCb() {
 	framecount++;
 	WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, brightness);
 	//ets_intr_lock();
-	vTaskDelay(20 / portTICK_RATE_MS);
+	taskYIELD();
+
 	taskENTER_CRITICAL();
+	//taskDISABLE_INTERRUPTS();
 	setled(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), brightness);
+	//taskENABLE_INTERRUPTS();
 	taskEXIT_CRITICAL();
+
 	//ets_intr_unlock();
 }
 
@@ -195,7 +199,8 @@ void  handle_led_command(char * pusrdata, int length) {
 					handle_led_command(&pusrdata[1], length-1);
 					break;
 				case 0xFF:
-					sendid();
+					//os_printf("Send id \r\n");
+					//sendid();
 //					os_timer_disarm(&writeudpTimer);
 //					os_timer_setfn(&writeudpTimer,(os_timer_func_t *) sendchipid_package, pUdpConnection);
 //					os_timer_arm(&writeudpTimer, 5, 0);

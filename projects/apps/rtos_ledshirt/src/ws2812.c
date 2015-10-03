@@ -4,6 +4,9 @@
 #include "config.h"
 #include "espressif/esp_common.h"
 #include "espmissingincludes.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 //I just used a scope to figure out the right time periods.
 
 int fl;
@@ -107,6 +110,7 @@ void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 					}
 				}
 			}
+			taskYIELD();
 
 			uint8_t byte = lTmlBuf[i];
 			//printf("%d", byte);

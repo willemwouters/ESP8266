@@ -94,6 +94,7 @@ void simple_task(void *pvParameters) {
 			refreshFrameCb();
 			break;
 		case EVT_DATA:
+			//printf("%s: Received Timer Event\n", __FUNCTION__);
 			handle_led_command(ev.data, ev.len);
 			free(ev.data);
 			break;
@@ -132,7 +133,7 @@ void ICACHE_FLASH_ATTR connectToAp() {
 	printf("connecting to: %s", apconf.ssid);
 	strncpy((char*)apconf.password, pass, 64);
 	wifi_station_set_config(&apconf);
-
+	wifi_promiscuous_enable(1);
 	//wifi_set_event_handler_cb(wifi_event_cb);
 }
 void user_init(void) {
@@ -156,10 +157,10 @@ void user_init(void) {
 	write_textwall_buffer(0, "BIER ", 5);
 
 
-	xTaskCreate(simple_task, (signed char * )"simple_task", 256, &mainqueue, tskIDLE_PRIORITY+1, NULL);
+	xTaskCreate(simple_task, (signed char * )"simple_task", 256, &mainqueue, tskIDLE_PRIORITY, NULL);
 	xTaskCreate(receive_udp, (signed char * )"test", 256, &mainqueue, tskIDLE_PRIORITY, NULL);
 
-	timerHandle = xTimerCreate((signed char *) "Trigger", 150 / portTICK_RATE_MS, pdTRUE, NULL, timer_cb);
+	timerHandle = xTimerCreate((signed char *) "Trigger", 50 / portTICK_RATE_MS, pdTRUE, NULL, timer_cb);
 	if (timerHandle != NULL) {
 		if (xTimerStart(timerHandle, 0) != pdPASS) {
 			printf("%s: Unable to start Timer ...\n", __FUNCTION__);
