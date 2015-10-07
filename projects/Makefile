@@ -13,14 +13,16 @@ SDK_EXTRA_INCLUDE := $(addsuffix /include, $(SDK_EXTRA_INCLUDE))
 SDK_INCLUDE ?= $(SDK_BASE)/include include $(SDK_EXTRA_INCLUDE)
 export PATH := $(TOOLCHAIN_BASE)/bin:$(PATH)
 
-BUILD_BASE	= build
-FW_BASE		= firmware
+ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-ESPTOOL		?= esptool.py
-ESPPORT		?= /dev/ttyUSB0
+include $(ROOT_DIR)/settings.mk
 
-FW_TOOL		?= /usr/bin/esptool
-TARGET		= simple_uart
+
+ifndef TARGET
+    TARGET := out
+endif
+
+
 export PATH := $(TOOLCHAIN_BASE)/bin:$(PATH)
 
 # which modules (subdirectories) of the project to include in compiling
@@ -35,15 +37,13 @@ EXTRA_INCDIR	= \
 # libraries used in this project, mainly provided by the SDK
 LIBS		:= $(CUSTOM_LIBS)  $(LIBS) 
 
-ifeq	($(MAKECMDGOALS), small)
-	SMALLFLAGS =-DREALROWS=7
-endif
+
 
 ifndef OPTIMIZE_FLAG
     OPTIMIZE_FLAG :=-O2
 endif
 # compiler flags using during compilation of source files
-CFLAGS		:= $(CFLAGS) $(SMALLFLAGS) -c $(OPTIMIZE_FLAG) -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib  -fno-exceptions -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		:= $(CFLAGS) -c $(OPTIMIZE_FLAG) -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib  -fno-exceptions -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 CPPFLAGS := -g $(OPTIMIZE_FLAG) -Wpointer-arith -Wundef -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -fno-exceptions -fno-rtti  -D__ets__ -DICACHE_FLASH
 
@@ -62,12 +62,6 @@ FW_FILE_1	= 0x00000
 FW_FILE_1_ARGS	= -bo $@ -bs .text -bs .data -bs .rodata -bc -ec
 FW_FILE_2	= 0x40000
 FW_FILE_2_ARGS	= -es .irom0.text $@ -ec
-
-# select which tools to use as compiler, librarian and linker
-CC		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-gcc
-CPP		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-g++
-AR		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-ar
-LD		:= $(TOOLCHAIN_BASE)/bin/xtensa-lx106-elf-gcc
 
 
 ####

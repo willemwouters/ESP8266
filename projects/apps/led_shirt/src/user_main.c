@@ -15,6 +15,7 @@
 #include "lwip/init.h"
 #include "lwip/netif.h"
 #include "lwip/igmp.h"
+#include "lwip/pbuf.h"
 #include "lwip/udp.h"
 #include "espconn.h"
 #include "debug.h"
@@ -153,6 +154,7 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 	int length = p->len;
 	char * pusrdata = p->payload;
 	int i = 0;
+	system_soft_wdt_feed();
 
 	if(length > 2) {
 			if(!GetMutex(&refreshMutext)) {
@@ -284,10 +286,12 @@ shell_init(void)
 
 void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
 	if(evt->event == EVENT_STAMODE_GOT_IP) {
+		os_printf("Connected\r\n");
 		shell_init();
 	}
 	if(evt->event == EVENT_STAMODE_DISCONNECTED) {
 		if(pUdpConnection != NULL) {
+			os_printf("Disconnected\r\n");
 			udp_disconnect(pUdpConnection);
 			udp_remove(pUdpConnection);
 			pUdpConnection = NULL;
