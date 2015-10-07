@@ -3,27 +3,27 @@
 #include "osapi.h"
 #include "user_interface.h"
 #include "driver/uart.h"
+#include "GDBStub.h"
+
 static ETSTimer tickTimer;
 
-void ReceiveUART(char * val) {
-	os_printf("Received stuff: %s \r\n", val);
+void Crash() {
+	int * i =  (int*)0;
+	*i = 1;
 }
+
 
 void tickCb() {
-	os_timer_disarm(&tickTimer);
-	ets_wdt_disable();
-	os_intr_lock();
-
 	os_printf("Tick\r\n");
-
-	os_intr_unlock();
-	ets_wdt_enable();
+	Crash();
 	os_timer_arm(&tickTimer, 1000, 0);
-	
 }
 
+
 void user_init(void) {
-	uart_init(BIT_RATE_115200, BIT_RATE_115200); //ReceiveUART, true); // baudrate, callback, eolchar, printftouart
+	uart_init(BIT_RATE_115200, BIT_RATE_115200);
+	gdb_init();
+
 	os_printf("Starting \r\n");
  	
 	os_timer_disarm(&tickTimer);
