@@ -38,7 +38,11 @@ void ets_bzero(void *s, size_t n);
 
 void ets_wdt_disable();
 void ets_wdt_enable();
+void ets_wdt_restore();
 void ets_intr_lock (void);
 void ets_intr_unlock (void);
+
+void _ResetVector();
+void _xtos_set_exception_handler();
 
 #endif

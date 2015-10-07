@@ -38,8 +38,12 @@ LIBS		:= $(CUSTOM_LIBS)  $(LIBS)
 ifeq	($(MAKECMDGOALS), small)
 	SMALLFLAGS =-DREALROWS=7
 endif
+
+ifndef OPTIMIZE_FLAG
+    OPTIMIZE_FLAG :=-O2
+endif
 # compiler flags using during compilation of source files
-CFLAGS		:= $(CFLAGS) $(SMALLFLAGS) -c -O2 -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib  -fno-exceptions -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		:= $(CFLAGS) $(SMALLFLAGS) -c $(OPTIMIZE_FLAG) -ggdb -std=gnu99 -Wpointer-arith -Wundef  -Wl,-EL -fno-inline-functions -nostdlib  -fno-exceptions -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 CPPFLAGS := -g -O2 -Wpointer-arith -Wundef -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -fno-exceptions -fno-rtti  -D__ets__ -DICACHE_FLASH
 
