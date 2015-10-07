@@ -5,15 +5,15 @@ ifndef PDIR
 endif
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-TOOLCHAIN_BASE := $(ROOT_DIR)/../../
+TOOLCHAIN_BASE := $(ROOT_DIR)/../../gcc/xtensa-lx106-elf_02/
 
 include $(PDIR)../settings.mk
 
-AR = xtensa-lx106-elf-ar
-CC = xtensa-lx106-elf-cc
-NM = xtensa-lx106-elf-nm
-CPP = xtensa-lx106-elf-cpp
-OBJCOPY = xtensa-lx106-elf-objcopy
+##AR = xtensa-lx106-elf-ar
+##CC = xtensa-lx106-elf-cc
+##NM = xtensa-lx106-elf-nm
+##CPP = xtensa-lx106-elf-cpp
+##OBJCOPY = xtensa-lx106-elf-objcopy
 ##MAKE = xt-make
 
 CSRCS ?= $(wildcard *.c)
