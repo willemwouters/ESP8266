@@ -4,7 +4,7 @@ https://github.com/willemwouters/ESP8266/wiki
 For examples
 
 
-ESP8266, toolchain, sdk's and projects
+ESP8266, toolchain, sdk's, gdb and example/projects
 
 Toolchains:
 Espressif regular
