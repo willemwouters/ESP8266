@@ -1,4 +1,15 @@
 
+
+Goto projects/apps/.....
+
+Available options:
+make clean
+make clean_modules
+make modules
+make
+make flash
+
+
 GOTO: 
 https://github.com/willemwouters/ESP8266/wiki
 For examples
