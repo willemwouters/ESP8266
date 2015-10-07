@@ -17,7 +17,8 @@
 #include "lwip/igmp.h"
 #include "lwip/udp.h"
 #include "espconn.h"
-
+#include "debug.h"
+#include "GDBStub.h"
 
 #define os_intr_lock ets_intr_lock
 #define os_intr_unlock ets_intr_unlock
@@ -312,6 +313,7 @@ void ICACHE_FLASH_ATTR connectToAp() {
 	wifi_set_event_handler_cb(wifi_event_cb);
 }
 
+
 void user_done(void) {
 
 	connectToAp();
@@ -348,6 +350,8 @@ void user_done(void) {
 
 void user_init() {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200); //ReceiveUART, true); // baudrate, callback, eolchar, printftouart
+
+	gdb_init();
 
 	system_init_done_cb(user_done);
 }

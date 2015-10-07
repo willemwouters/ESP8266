@@ -28,7 +28,46 @@ int GammaE[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 					191,193,194,196,198,200,202,204,206,208,210,212,214,216,218,220,
 					222,224,227,229,231,233,235,237,239,241,244,246,248,250,252,255};
 
-float  dimscale[20] = { 0.05, 0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55,  0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1};
+
+
+int ledlookuphoriz[120] = {	0,	8,	16,	24,	32,	40,	48,	56,
+						64,	72,	80,	88,	96,	104,112,113,
+						105,97,	89,	81,	73,	65,	57,	49,
+						41,	33,	25,	17,	9,	1,	2,	10,
+						18,	26,	34,	42,	50,	58,	66,	74,
+						82,	90,	98,	106,114,115,107,99,
+						91,	83,	75,	67,	59,	51,	43,	35,
+						27,	19,	11,	3,	4,	12,	20,	28,
+						36,	44,	52,	60,	68,	76,	84,	92,
+						100,108,116,117,109,101,93,	85,
+						77,	69,	61,	53,	45,	37,	29,	21,
+						13,	5,	6,	14,	22,	30,	38,	46,
+						54,	62,	70,	78,	86,	94,	102,110,
+						118,119,111,103,95,	87,	79,	71,
+						63,	55,	47,	39,	31,	23,	15,	7 };
+
+
+int ledlookupver[120]=  {
+		0,	1,	2,	3,	4,	5,	6,	7,
+		15,	14,	13,	12,	11,	10,	9,	8,
+		16,	17,	18,	19,	20,	21,	22,	23,
+		31,	30,	29,	28,	27,	26,	25,	24,
+		32,	33,	34,	35,	36,	37,	38,	39,
+		47,	46,	45,	44,	43,	42,	41,	40,
+		48,	49,	50,	51,	52,	53,	54,	55,
+		63,	62,	61,	60,	59,	58,	57,	56,
+		64,	65,	66,	67,	68,	69,	70,	71,
+		79,	78,	77,	76,	75,	74,	73,	72,
+		80,	81,	82,	83,	84,	85,	86,	87,
+		95,	94,	93,	92,	91,	90,	89,	88,
+		96,	97,	98,	99,	100,	101,	102,	103,
+		111,	110,	109,	108,	107,	106,	105,	104,
+		112,	113,	114,	115,	116,	117,	118,	119};
+
+
+float  dimscale[20] = { 0.05, 0.1, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55,  0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.90, 0.90};
+
+
 static char lTmlBuf[COLUMNS * ROWS * COLORS];
 void  __attribute__((optimize("O2"))) send_ws_0(uint8_t gpio){
   uint8_t i;
@@ -50,7 +89,7 @@ void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 
 	for( i = 0; i < length; i++ )
 			{
-		system_soft_wdt_feed();
+				system_soft_wdt_feed();
 				int val = i;
 				if(i % 3 == 0) {
 					val = val + 1;
@@ -59,20 +98,11 @@ void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 					val = val - 1;
 				}
 
+				int npos = 0;
 				int tot = i / 3;
-				int r = 0;
+				npos = (ledlookuphoriz[tot] * 3) + (val % 3);
+				uint8_t byte = buffer[npos];
 
-				int vr = 7;
-				int t = tot / ROWS;
-
-				if(t % 2 == 1) {
-					int add = 0;
-					add = ((ROWS-1) - ((tot % ROWS) * 2) ); //   (6 - (0 * 2) )  		7 mod 7 = 0   =
-					val = val + (add * 3);	// 21 + 21 = 42		24 + 18 = 42
-				}
-
-
-				uint8_t byte = buffer[val];
 				if(dim > 19) {
 					dim = 19;
 				}
@@ -100,30 +130,26 @@ void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 	for( i = 0; i < length; i++ )
 	{
 		system_soft_wdt_feed();
-
+		if(REALROWS == 7) {
 			int tot = i / 3;
-			//tot = tot;
-			if(REALROWS == 7) {
-				if(tot == 0 || tot == 15 || tot == 31 || tot == 47 || tot == 63 || tot == 79 || tot == 95  ) {
-					if(tot == 0) {
-						i = i + 3;
-					} else {
-						i = i + 6;
-					}
+			if(tot == 0 || tot == 15 || tot == 31 || tot == 47 || tot == 63 || tot == 79 || tot == 95  ) {
+				if(tot == 0) {
+					i = i + 3;
+				} else {
+					i = i + 6;
 				}
 			}
+		}
 
-			uint8_t byte = lTmlBuf[i];
-			if( byte & 0x80 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x40 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x20 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x10 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x08 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x04 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x02 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-			if( byte & 0x01 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
-
-
+		uint8_t byte = lTmlBuf[i];
+		if( byte & 0x80 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x40 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x20 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x10 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x08 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x04 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x02 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+		if( byte & 0x01 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
 	}
 	//os_printf("\r\n");
 	//reset will happen when it's low long enough.
