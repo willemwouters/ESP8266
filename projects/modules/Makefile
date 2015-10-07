@@ -7,14 +7,14 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 TOOLCHAIN_BASE := $(ROOT_DIR)/../../
 
-include $(PDIR)../modules.mk
+include $(PDIR)../settings.mk
 
-#AR = xtensa-lx106-elf-ar
-#CC = xtensa-lx106-elf-cc
-#NM = xtensa-lx106-elf-nm
-#CPP = xtensa-lx106-elf-cpp
-#OBJCOPY = xtensa-lx106-elf-objcopy
-#MAKE = xt-make
+AR = xtensa-lx106-elf-ar
+CC = xtensa-lx106-elf-cc
+NM = xtensa-lx106-elf-nm
+CPP = xtensa-lx106-elf-cpp
+OBJCOPY = xtensa-lx106-elf-objcopy
+##MAKE = xt-make
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
