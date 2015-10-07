@@ -1,0 +1,15 @@
+
+
+1.
+ADD GDBStub.c and GDBStub.h to your project
+
+2. 
+Call gdb_init() from user_init()
+
+3.
+Start, press CTL-Z  and "bg"  to go to background     This can be left open, even during programming
+../../../sdk/tcp_serial_redirect.py -p /dev/ttyUSB0 -b 115200 --spy -P 9988 --rts=0 --dtr=0
+
+4. 
+When crash occurs open, close when programming:
+./bsp/xtensa-2/bin/xtensa-lx106-elf-gdb ./build/simple_uart.out -ex "target remote :9988"
