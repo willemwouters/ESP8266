@@ -46,18 +46,7 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
 
-CCFLAGS := 			\
-	-g			\
-	-O2			\
-	-Wpointer-arith		\
-	-Wundef			\
-	-Werror			\
-	-Wl,-EL			\
-	-fno-inline-functions	\
-	-nostdlib       \
-	-mlongcalls	\
-	-mtext-section-literals
-#	-Wall			
+CCFLAGS := 	$(CFLAGS)
 
 CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(INCLUDES) 
 DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(INCLUDES)

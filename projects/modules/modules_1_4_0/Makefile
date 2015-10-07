@@ -29,21 +29,12 @@ endif # } PDIR
 APPDIR = .
 LDDIR = ../ld
 
-CCFLAGS += -Os
-
 TARGET_LDFLAGS =		\
 	-nostdlib		\
 	-Wl,-EL \
 	--longcalls \
 	--text-section-literals
 
-ifeq ($(FLAVOR),debug)
-    TARGET_LDFLAGS += -g -O2
-endif
-
-ifeq ($(FLAVOR),release)
-    TARGET_LDFLAGS += -g -O0
-endif
 
 LD_FILE = $(LDDIR)/eagle.app.v6.ld
 
