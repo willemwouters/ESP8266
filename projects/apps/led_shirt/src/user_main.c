@@ -148,7 +148,6 @@ void sendchipid_package(struct udp_pcb *pcb) {
 	os_memcpy (b->payload, data, 6);
 	udp_sendto(pcb, b, IP_ADDR_BROADCAST, 9090);
 	pbuf_free(b);
-	os_timer_disarm(&writeudpTimer);
 }
 void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
 	int length = p->len;
@@ -163,6 +162,14 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 				pbuf_free(p);
 				return;
 			}
+
+
+			if(pusrdata[0] == 0xFE) {
+					initCommand++;
+					pusrdata = &pusrdata[1];
+					length = length - 1;
+			}
+
 
 			switch (pusrdata[0]) {
 				case 0x00:
@@ -244,17 +251,8 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					fontbackB = pusrdata[3];
 					os_printf("Setting font back \r\n");
 					break;
-				case 0xFE:
-					initCommand++;
-					ReleaseMutex(&refreshMutext);
-					p->payload = &pusrdata[1];
-					p->len = p->len - 1;
-					handle_udp_recv(arg, pcb, p,  addr, port);
-					break;
 				case 0xFF:
-					os_timer_disarm(&writeudpTimer);
-					os_timer_setfn(&writeudpTimer,(os_timer_func_t *) sendchipid_package, pUdpConnection);
-					os_timer_arm(&writeudpTimer, 5, 0);
+					sendchipid_package(pcb);
 					break;
 				default:
 					break;
@@ -271,15 +269,41 @@ shell_init(void)
 	struct ip_addr ipSend;
 	lwip_init();
 	pUdpConnection = udp_new();
+
+	if(pUdpConnection == NULL) {
+		os_printf("\nCould not create new udp socket... \n");
+	}
+
 	IP4_ADDR(&ipSend, 255, 255, 255, 255);
 	pUdpConnection->multicast_ip = ipSend;
 	pUdpConnection->remote_ip = ipSend;
 	pUdpConnection->remote_port = 8080;
-	if(pUdpConnection == NULL) {
-		os_printf("\nCould not create new udp socket... \n");
-	}
+	pUdpConnection->ttl = 1;
+	pUdpConnection->so_options |= SOF_BROADCAST;
+	pUdpConnection->so_options |= SOF_ACCEPTCONN;
+	pUdpConnection->so_options |= SOF_REUSEADDR;
+
+
 	err = udp_bind(pUdpConnection, IP_ADDR_ANY, 8080);
 	udp_recv(pUdpConnection, handle_udp_recv, pUdpConnection);
+
+	for(int i = 0; i < 10; i++) {
+		struct udp_pcb * p = udp_new();
+		p->multicast_ip = ipSend;
+		p->remote_ip = ipSend;
+		p->remote_port = 8080;
+		p->ttl = 1;
+		p->so_options |= SOF_BROADCAST;
+		p->so_options |= SOF_ACCEPTCONN;
+		p->so_options |= SOF_REUSEADDR;
+
+		err = udp_bind(p, IP_ADDR_ANY, 8080);
+		udp_recv(p, handle_udp_recv, p);
+
+		err = udp_bind(p, IP_ADDR_ANY, 8080);
+		udp_recv(p, handle_udp_recv, p);
+	}
+
 }
 
 
@@ -320,12 +344,12 @@ void ICACHE_FLASH_ATTR connectToAp() {
 
 void user_done(void) {
 
-	connectToAp();
 
 	bool t = system_update_cpu_freq(SYS_CPU_160MHZ);
 	if(!t) {
 		os_printf("Could not set high cpu freq \r\n");
 	}
+	connectToAp();
 	chip_id = system_get_chip_id();
 	i1 = (chip_id & 0xff << 24);
 	i2= (chip_id & 0xff << 16);

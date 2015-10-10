@@ -100,7 +100,11 @@ void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 
 				int npos = 0;
 				int tot = i / 3;
+#ifdef VERTICAL
+				npos = (ledlookupver[tot] * 3) + (val % 3);
+#else
 				npos = (ledlookuphoriz[tot] * 3) + (val % 3);
+#endif
 				uint8_t byte = buffer[npos];
 
 				if(dim > 19) {
