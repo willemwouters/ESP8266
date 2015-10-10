@@ -77,7 +77,7 @@ typedef unsigned long   mem_ptr_t;
 
 #ifdef LWIP_DEBUG
 #define LWIP_PLATFORM_DIAG(x) os_printf x
-#define LWIP_PLATFORM_ASSERT(x) ETS_ASSERT(x)
+#define LWIP_PLATFORM_ASSERT(x) os_printf x //ETS_ASSERT(x)
 #else
 #define LWIP_PLATFORM_DIAG(x)
 #define LWIP_PLATFORM_ASSERT(x)
@@ -88,8 +88,8 @@ typedef unsigned long   mem_ptr_t;
 #define SYS_ARCH_UNPROTECT(x)
 
 #define LWIP_PLATFORM_BYTESWAP 1
-#define LWIP_PLATFORM_HTONS(_n)  ((u16_t)(((((int) _n) & 0xff) << 8) | ((((int) _n) >> 8) & 0xff)))
-#define LWIP_PLATFORM_HTONL(_n)  ((u32_t)( ((((int)_n) & 0xff) << 24) | ((((int)_n) & 0xff00) << 8) | ((((int)_n) >> 8)  & 0xff00) | ((((int)_n) >> 24) & 0xff) ))
+#define LWIP_PLATFORM_HTONS(_n)  ((u16_t)((((_n) & 0xff) << 8) | (((_n) >> 8) & 0xff)))
+#define LWIP_PLATFORM_HTONL(_n)  ((u32_t)( (((_n) & 0xff) << 24) | (((_n) & 0xff00) << 8) | (((_n) >> 8)  & 0xff00) | (((_n) >> 24) & 0xff) ))
 
 #if LWIP_RAW
 extern u8_t memp_memory_RAW_PCB_base[];

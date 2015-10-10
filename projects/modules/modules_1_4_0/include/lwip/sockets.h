@@ -36,7 +36,7 @@
 
 #include "lwip/opt.h"
 
-#ifdef LWIP_SOCKET /* don't build if not configured for use in lwipopts.h */
+#if LWIP_SOCKET /* don't build if not configured for use in lwipopts.h */
 
 #include <stddef.h> /* for size_t */
 

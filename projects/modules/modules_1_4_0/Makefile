@@ -22,6 +22,7 @@ ifndef PDIR # {
 SUBDIRS=    \
 	driver	\
 	lwip	\
+	lwip_p	\
 	compatible
 
 endif # } PDIR

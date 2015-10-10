@@ -9,6 +9,7 @@
 #include "os_type.h"
 #ifdef LWIP_OPEN_SRC
 #include "lwip/ip_addr.h"
+#include "lwip/app/dhcpserver.h"
 #else
 #include "ip_addr.h"
 #endif
@@ -274,32 +275,39 @@ struct station_info {
 	struct ip_addr ip;
 };
 
-struct dhcps_lease {
-	struct ip_addr start_ip;
-	struct ip_addr end_ip;
-};
 
-enum dhcps_offer_option{
-	OFFER_START = 0x00,
-	OFFER_ROUTER = 0x01,
-	OFFER_END
-};
+#ifndef LWIP_OPEN_SRC
+	struct dhcps_lease {
+		struct ip_addr start_ip;
+		struct ip_addr end_ip;
+	};
+
+	enum dhcps_offer_option{
+		OFFER_START = 0x00,
+		OFFER_ROUTER = 0x01,
+		OFFER_END
+	};
+
+
+	bool wifi_softap_dhcps_start(void);
+	bool wifi_softap_dhcps_stop(void);
+
+	bool wifi_softap_set_dhcps_lease(struct dhcps_lease *please);
+	bool wifi_softap_get_dhcps_lease(struct dhcps_lease *please);
+	uint32 wifi_softap_get_dhcps_lease_time(void);
+	bool wifi_softap_set_dhcps_lease_time(uint32 minute);
+	bool wifi_softap_reset_dhcps_lease_time(void);
+
+	enum dhcp_status wifi_softap_dhcps_status(void);
+	bool wifi_softap_set_dhcps_offer_option(uint8 level, void* optarg);
+
+
+#endif
+
 
 uint8 wifi_softap_get_station_num(void);
 struct station_info * wifi_softap_get_station_info(void);
 void wifi_softap_free_station_info(void);
-
-bool wifi_softap_dhcps_start(void);
-bool wifi_softap_dhcps_stop(void);
-
-bool wifi_softap_set_dhcps_lease(struct dhcps_lease *please);
-bool wifi_softap_get_dhcps_lease(struct dhcps_lease *please);
-uint32 wifi_softap_get_dhcps_lease_time(void);
-bool wifi_softap_set_dhcps_lease_time(uint32 minute);
-bool wifi_softap_reset_dhcps_lease_time(void);
-
-enum dhcp_status wifi_softap_dhcps_status(void);
-bool wifi_softap_set_dhcps_offer_option(uint8 level, void* optarg);
 
 #define STATION_IF      0x00
 #define SOFTAP_IF       0x01
