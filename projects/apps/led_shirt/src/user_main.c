@@ -21,12 +21,14 @@
 #include "debug.h"
 #include "GDBStub.h"
 
+#include "log.h"
+
 #define os_intr_lock ets_intr_lock
 #define os_intr_unlock ets_intr_unlock
 
 static struct udp_pcb * pUdpConnection = NULL;
 static ETSTimer framerefreshTimer;
-static ETSTimer writeudpTimer;
+static ETSTimer watchdogTimer;
 
 int brightness = 5;
 int fontbackR = 0;
@@ -80,7 +82,7 @@ void refreshFrameCb() {
 
 
 	if(!GetMutex(&refreshMutext)) {
-		os_printf("read - Could not get mutex \r\n");
+		LOG_E(LOG_USER,  LOG_USER_TAG, "read - Could not get mutex \r\n");
 		os_timer_arm(&framerefreshTimer, FRAME_REFRESH_RETRYSPEED, 0);
 		return;
 	}
@@ -129,11 +131,11 @@ void refreshFrameCb2() {
 		return;
 	}
 
-	os_intr_lock();
+	//os_intr_lock();
 	ets_wdt_disable();
 	setled(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), brightness);
 	ets_wdt_enable();
-	os_intr_unlock();
+	//os_intr_unlock();
 
 	ReleaseMutex(&refreshMutext);
 	os_timer_setfn(&framerefreshTimer, refreshFrameCb, NULL);
@@ -154,10 +156,10 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 	char * pusrdata = p->payload;
 	int i = 0;
 	system_soft_wdt_feed();
-
+	static int precommand = 0;
 	if(length > 2) {
 			if(!GetMutex(&refreshMutext)) {
-				os_printf("write - Could not get mutex \r\n");
+				LOG_E(LOG_UDP, LOG_UDP_TAG, "write - Could not get mutex ");
 				os_timer_arm(&framerefreshTimer, FRAME_REFRESH_RETRYSPEED, 0);
 				pbuf_free(p);
 				return;
@@ -166,6 +168,7 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 
 			if(pusrdata[0] == 0xFE) {
 					initCommand++;
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Got init command, processing:");
 					pusrdata = &pusrdata[1];
 					length = length - 1;
 			}
@@ -173,7 +176,7 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 
 			switch (pusrdata[0]) {
 				case 0x00:
-					os_printf("Writing text data to buffer: 0 len%d\r\n", length-2);
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Writing text data to buffer: %s", &pusrdata[2]);
 					write_textwall_buffer(0, &pusrdata[2], length-2);
 					textframeoffset = 0;
 					activebuffer = 0;
@@ -181,33 +184,29 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					if(pusrdata[1] == 0) {
 						scroll = 0;
 					}
-					os_printf("Text:");
-					for(i = 2; i < length; i++) {
-						os_printf("%c", pusrdata[i]);
-					}
-					os_printf("\n");
 					break;
 				case 0x01:
+					if(precommand != pusrdata[0])
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Setting stream of data");
 					writestream(pusrdata[1], &pusrdata[2], length-2);
 					activebuffer = pusrdata[1];
 					break;
 				case 0x02:
-					os_printf("Setting mode to flicker \r\n");
 					if(pusrdata[1] == 0x00) {
 						MODEFLASH = FLICKER;
-						os_printf("Setting mode to flicker buffer\r\n");
+						LOG_I(LOG_UDP, LOG_UDP_TAG, "Setting mode to flash");
 					} else {
 						MODEFLASH = NORMAL;
-						os_printf("Setting mode to normal \r\n");
+						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
 					break;
 				case 0x03:
 					if(pusrdata[1] == 0x00) {
 						MODE = FLICKER_BUFFER;
-						os_printf("Setting mode to flicker buffer\r\n");
+						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to flicker");
 					} else {
 						MODE = NORMAL;
-						os_printf("Setting mode to normal \r\n");
+						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
 					break;
 				case 0x04:
@@ -217,11 +216,11 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					if(pusrdata[1] < 0) {
 						pusrdata[1] = 0;
 					}
-					os_printf("Setting framespeed: %d \r\n", pusrdata[1]);
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting speed: %d", (20 - pusrdata[1]));
 					flashspeed = 20 - pusrdata[1];
 					break;
 				case 0x05:
-					os_printf("Setting dim: %d \r\n", pusrdata[1]);
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting dim level: %d", pusrdata[1]);
 					brightness = pusrdata[1];
 					break;
 				case 0x06:
@@ -231,31 +230,35 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					if(pusrdata[1] < 0) {
 						pusrdata[1] = 0;
 					}
-					os_printf("Setting textspeed: %d \r\n", pusrdata[1]);
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting textspeed: %d", pusrdata[1]);
 					textspeed = 20 - pusrdata[1];
 					break;
 				case 0x07:
 					set_buffer(pusrdata[1], pusrdata[2], pusrdata[3], pusrdata[4]);
-					os_printf("Setting to val \r\n");
+					//os_printf("Setting to val \r\n");
 					activebuffer = pusrdata[1];
 					break;
 				case 0x08:
 					fontR = pusrdata[1];
 					fontG = pusrdata[2];
 					fontB = pusrdata[3];
-					os_printf("Setting fontcolor \r\n");
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting font front color");
 					break;
 				case 0x09:
 					fontbackR = pusrdata[1];
 					fontbackG = pusrdata[2];
 					fontbackB = pusrdata[3];
-					os_printf("Setting font back \r\n");
+					LOG_I(LOG_UDP,  LOG_UDP_TAG,  "Setting font background color");
 					break;
 				case 0xFF:
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Ask for ID package");
 					sendchipid_package(pcb);
 					break;
 				default:
 					break;
+			}
+			if(precommand != pusrdata[0]) {
+				precommand = pusrdata[0];
 			}
 			ReleaseMutex(&refreshMutext);
 		}
@@ -271,7 +274,7 @@ shell_init(void)
 	pUdpConnection = udp_new();
 
 	if(pUdpConnection == NULL) {
-		os_printf("\nCould not create new udp socket... \n");
+		LOG_E(LOG_USER, LOG_USER_TAG, "Could not create new udp socket");
 	}
 
 	IP4_ADDR(&ipSend, 255, 255, 255, 255);
@@ -310,12 +313,12 @@ shell_init(void)
 
 void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
 	if(evt->event == EVENT_STAMODE_GOT_IP) {
-		os_printf("Connected\r\n");
+		LOG_W(LOG_USER,  LOG_USER_TAG,"Connected to AP, got ip");
 		shell_init();
 	}
 	if(evt->event == EVENT_STAMODE_DISCONNECTED) {
 		if(pUdpConnection != NULL) {
-			os_printf("Disconnected\r\n");
+			LOG_W(LOG_USER,  LOG_USER_TAG, "Disconnected from AP");
 			udp_disconnect(pUdpConnection);
 			udp_remove(pUdpConnection);
 			pUdpConnection = NULL;
@@ -329,25 +332,31 @@ void ICACHE_FLASH_ATTR connectToAp() {
 	char * pass = "test12345";
 	wifi_set_phy_mode( PHY_MODE_11N );
 
+	LOG_I(LOG_USER,  LOG_USER_TAG,"Connecting to AP: %s", ap);
+
 	struct station_config apconf;
 	wifi_station_set_auto_connect(true);
 	wifi_set_opmode(STATION_MODE);
 	wifi_station_get_config(&apconf);
 	os_strncpy((char*)apconf.ssid, ap, 32);
-	os_printf("connecting to: %s", apconf.ssid);
 	os_strncpy((char*)apconf.password, pass, 64);
 	wifi_station_set_config(&apconf);
-
 	wifi_set_event_handler_cb(wifi_event_cb);
 }
 
+void watchdogCb() {
+	os_timer_disarm(&watchdogTimer);
+	LOG_W(LOG_USER, "Watchdog", "Tick");
+	os_timer_arm(&watchdogTimer, 60000, 0);
+}
 
 void user_done(void) {
+	os_printf("\r\n"); // clear output
 
-
+	LOG_I(LOG_USER,  LOG_USER_TAG, "Starting up");
 	bool t = system_update_cpu_freq(SYS_CPU_160MHZ);
 	if(!t) {
-		os_printf("Could not set high cpu freq \r\n");
+		LOG_E(LOG_USER,  LOG_USER_TAG, "Could not set to 160mhz");
 	}
 	connectToAp();
 	chip_id = system_get_chip_id();
@@ -366,14 +375,18 @@ void user_done(void) {
 	char outbuffer[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	WS2812OutBuffer( outbuffer, 6 , 0); //Initialize the output.
 
-
 	CreateMutux(&refreshMutext);
 
-	write_textwall_buffer(0, "BIER ", 5);
+	write_textwall_buffer(0, "BIER ", 5); // initial text while no commands
 
 	os_timer_disarm(&framerefreshTimer);
 	os_timer_setfn(&framerefreshTimer, refreshFrameCb, NULL);
 	os_timer_arm(&framerefreshTimer, FRAME_REFRESH_SPEED, 0);
+
+
+	os_timer_disarm(&watchdogTimer);
+	os_timer_setfn(&watchdogTimer, watchdogCb, NULL);
+	os_timer_arm(&watchdogTimer, 5000, 0);
 }
 
 void user_init() {

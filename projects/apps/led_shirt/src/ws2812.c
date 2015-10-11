@@ -122,6 +122,9 @@ void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 #define IO_MUX PERIPHS_IO_MUX_GPIO4_U
 #define IO_FUNC FUNC_GPIO4
 
+#define os_intr_lock ets_intr_lock
+#define os_intr_unlock ets_intr_unlock
+
 
 void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 {
@@ -130,6 +133,7 @@ void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 	GPIO_OUTPUT_SET(GPIO_ID_PIN(WSGPIO), 0);
 
 
+	os_intr_lock();
 
 	for( i = 0; i < length; i++ )
 	{
@@ -154,7 +158,9 @@ void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 		if( byte & 0x04 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
 		if( byte & 0x02 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
 		if( byte & 0x01 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
+
 	}
+	os_intr_unlock();
 	//os_printf("\r\n");
 	//reset will happen when it's low long enough.
 	//(don't call this function twice within 10us)

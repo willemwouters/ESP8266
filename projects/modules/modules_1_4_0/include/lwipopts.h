@@ -1872,7 +1872,7 @@
  * ICMP_DEBUG: Enable debugging in icmp.c.
  */
 #ifndef ICMP_DEBUG
-#define ICMP_DEBUG                      LWIP_DBG_OFF
+#define ICMP_DEBUG                      LWIP_DBG_ON
 #endif
 
 /**
@@ -1907,7 +1907,7 @@
  * RAW_DEBUG: Enable debugging in raw.c.
  */
 #ifndef RAW_DEBUG
-#define RAW_DEBUG                       LWIP_DBG_OFF
+#define RAW_DEBUG                       LWIP_DBG_ON
 #endif
 
 /**
@@ -1928,7 +1928,7 @@
  * SYS_DEBUG: Enable debugging in sys.c.
  */
 #ifndef SYS_DEBUG
-#define SYS_DEBUG                       LWIP_DBG_OFF
+#define SYS_DEBUG                       LWIP_DBG_ON
 #endif
 
 /**
