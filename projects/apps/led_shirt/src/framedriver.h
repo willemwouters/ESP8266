@@ -17,5 +17,6 @@ void ICACHE_FLASH_ATTR writestream(int buffer, char * data, int len);
 void write_textwall_buffer(int buffer, char * textbuffer, int len);
 void write_texttowall(int buffer, int textbuffer, long offset, int fR, int fG, int fB, int fbR, int fbG, int fbB);
 void clear_buffer(int buffer);
+void rainbow_copybuffer(int buffer, int frame);
 void set_buffer(int buffer, int val1, int val2, int val3);
 #endif /* SRC_FRAMEDRIVER_H_ */

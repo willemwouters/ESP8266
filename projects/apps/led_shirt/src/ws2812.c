@@ -4,12 +4,13 @@
 #include "osapi.h"
 #include "gpio.h"
 #include "config.h"
+#include "ws2812_i2s.h"
 
 #include "espmissingincludes.h"
 //I just used a scope to figure out the right time periods.
 
 int fl;
-
+int MAXPOWER = 20000;
 
 int GammaE[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 					0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
@@ -82,11 +83,29 @@ void __attribute__((optimize("O2"))) send_ws_1(uint8_t gpio){
 }
 
 
-
-void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
+unsigned long totalPower = 0;
+unsigned long totalPowerNew = 0;
+int powerCount = 0;
+int min = 0;
+int ledActiveCount = 0;
+void ICACHE_FLASH_ATTR WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 {
 	uint16_t i;
+	totalPower = 0;
 
+//	if(totcpy > 13000) {
+//		long t = totcpy - 13000;
+//		min = t / length;
+//		//os_printf("TotalPower: %d-%d, %d %d \r\n", totcpy, t, length, min);
+//	}
+	int tmpdim = dim + 20;
+	if(tmpdim > 255) {
+		tmpdim = 255;
+	}
+	float tdim = (tmpdim / 255.0);
+	int npos;
+	int tot;
+	uint8_t byte;
 	for( i = 0; i < length; i++ )
 			{
 				system_soft_wdt_feed();
@@ -98,25 +117,26 @@ void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 					val = val - 1;
 				}
 
-				int npos = 0;
-				int tot = i / 3;
+				tot = i / 3;
 #ifdef VERTICAL
 				npos = (ledlookupver[tot] * 3) + (val % 3);
 #else
 				npos = (ledlookuphoriz[tot] * 3) + (val % 3);
 #endif
-				uint8_t byte = buffer[npos];
-
-				if(dim > 19) {
-					dim = 19;
-				}
-				byte = byte * dimscale[dim];
+				byte = buffer[npos];
+				byte = byte * tdim;
 				if(flicker) {
 					byte = 0x00;
 				}
-
-				lTmlBuf[i] = GammaE[byte];
+				byte = GammaE[byte];
+				totalPower += byte;
+				lTmlBuf[i] = byte;
 			}
+
+			if(totalPower > MAXPOWER) {
+				WS2812CopyBuffer(buffer, length, flicker, dim-6);
+			}
+
 }
 #define IO_PIN 4
 #define IO_MUX PERIPHS_IO_MUX_GPIO4_U
@@ -126,19 +146,22 @@ void WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int flicker, int dim)
 #define os_intr_unlock ets_intr_unlock
 
 
-void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
+void ICACHE_FLASH_ATTR WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 {
 	uint16_t i;
 
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(WSGPIO), 0);
+	ws2812_push( lTmlBuf, length );
+
+	//GPIO_OUTPUT_SET(GPIO_ID_PIN(WSGPIO), 0);
 
 
-	os_intr_lock();
+	//int min = 0;
 
+	//os_intr_lock();
+/*
 	for( i = 0; i < length; i++ )
 	{
-		system_soft_wdt_feed();
-		if(REALROWS == 7) {
+#ifdef REALROWS
 			int tot = i / 3;
 			if(tot == 0 || tot == 15 || tot == 31 || tot == 47 || tot == 63 || tot == 79 || tot == 95  ) {
 				if(tot == 0) {
@@ -147,7 +170,8 @@ void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 					i = i + 6;
 				}
 			}
-		}
+#endif
+
 
 		uint8_t byte = lTmlBuf[i];
 		if( byte & 0x80 ) send_ws_1(WSGPIO); else send_ws_0(WSGPIO);
@@ -161,6 +185,9 @@ void WS2812OutBuffer( uint8_t * buffer, uint16_t length, int dim)
 
 	}
 	os_intr_unlock();
+	system_soft_wdt_feed();
+*/
+	//
 	//os_printf("\r\n");
 	//reset will happen when it's low long enough.
 	//(don't call this function twice within 10us)

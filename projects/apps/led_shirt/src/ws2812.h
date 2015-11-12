@@ -1,7 +1,7 @@
 #ifndef _WS2812_H
 #define _WS2812_H
 
-#define WSGPIO 5
+#define WSGPIO 12
 
 #include "c_types.h"
 #include "user_interface.h"

@@ -14,6 +14,71 @@
 static char framebuffer[BUFFERS * (COLUMNS *ROWS) * (COLORS)];
 static char bitmaptextbuffer[BUFFERS][(COLUMNS * TEXTROWS)][ROWS];
 int mTextLength = 0;
+
+void rainbow_calc(int progress, int * color)
+{
+	double r = 0.0;
+	double g = 0.0;
+	double b = 0.0;
+	double h = (double)(progress % 120) / 120;
+	int i = (int)(h * 6);
+	double f = h * 6.0 - i;
+	double q = 1 - f;
+
+	            switch (i % 6)
+	            {
+	                case 0:
+	                    r = 1;
+	                    g = f;
+	                    b = 0;
+	                    break;
+	                case 1:
+	                    r = q;
+	                    g = 1;
+	                    b = 0;
+	                    break;
+	                case 2:
+	                    r = 0;
+	                    g = 1;
+	                    b = f;
+	                    break;
+	                case 3:
+	                    r = 0;
+	                    g = q;
+	                    b = 1;
+	                    break;
+	                case 4:
+	                    r = f;
+	                    g = 0;
+	                    b = 1;
+	                    break;
+	                case 5:
+	                    r = 1;
+	                    g = 0;
+	                    b = q;
+	                    break;
+	            }
+
+	            color[0] = (r * 255);
+	            color[1] = (g * 255);
+	            color[2] = (b * 255);
+}
+void rainbow_copybuffer(int buffer, int frame) {
+	int c[3];
+
+
+	int count = 0;
+	for(int i = 0; i < COLUMNS; i++) {
+			for(int x = 0; x < ROWS; x++) {
+				rainbow_calc(count+frame, &c[0]);
+				setpixel(buffer, i, x,  c[0], c[1], c[2]);
+				count++;
+			}
+		 }
+
+	//set_buffer(buffer, c[0], c[1], c[2]);
+}
+
 void ICACHE_FLASH_ATTR writestream(int buffer, char * data, int len) {
 	if(len > (COLUMNS * ROWS * COLORS)) {
 		len = COLUMNS * ROWS * COLORS;
@@ -49,13 +114,13 @@ void ICACHE_FLASH_ATTR write_textwall_buffer(int textbuffer, char * text, int le
 					offset += 0;
 
 			}
-			if(text[bfstart] == '~') { // when special char;
+			while(text[bfstart] == '~') { // when special char;
 				for(int z = 0; z < (COLUMNS); z++) {
 					for(int y = 0; y < ROWS; y++) {
 						set_textpixel(textbuffer, i + offset + z,  y, false);
 					}
 				}
-				offset = offset + ((ROWS * 2)-2);	//JUMP EXACTLY 1 FRAME, for loop does next ++
+				offset = offset + (COLUMNS);	//JUMP EXACTLY 1 FRAME, for loop does next ++
 				bfstart++;
 			}
 

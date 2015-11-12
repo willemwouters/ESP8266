@@ -13,10 +13,8 @@
 #define NORMAL 1
 #define FLICKER 2
 #define FLICKER_BUFFER 3
+#define FLICKER_PULSE 4
 
-#if !defined(REALROWS)
-#define REALROWS 8
-#endif
 
 #define ROWS 8
 #define TEXTROWS 20

@@ -22,15 +22,16 @@
 #include "GDBStub.h"
 
 #include "log.h"
+#include "ws2812_i2s.h"
 
 #define os_intr_lock ets_intr_lock
 #define os_intr_unlock ets_intr_unlock
 
 static struct udp_pcb * pUdpConnection = NULL;
 static ETSTimer framerefreshTimer;
-static ETSTimer watchdogTimer;
 
-int brightness = 5;
+
+int brightness = 20;
 int fontbackR = 0;
 int fontbackG = 0;
 int fontbackB = 0;
@@ -39,11 +40,16 @@ int fontG = 255;
 int fontB = 255;
 int MODE = NORMAL;
 int MODEFLASH = NORMAL;
+int MODEFLASHPULSE = NORMAL;
 int scroll = 1;
 
 int activebuffer = 0;
 int initCommand = 0;
 int flashspeed = 2;
+int flashspeedtext = 2;
+int flashspeedicons = 2;
+int flashspeedfade = 2;
+int multicastlock = 0;
 int textspeed = 1;
 
 int32 chip_id = 0;
@@ -77,7 +83,10 @@ int BrightnessE[256] = { 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3,
 					222,224,227,229,231,233,235,237,239,241,244,246,248,250,252,255};
 
 void refreshFrameCb2();
-void refreshFrameCb() {
+float pulsecount = 0;
+int pulsedir = 0;
+
+void ICACHE_FLASH_ATTR refreshFrameCb() {
 	os_timer_disarm(&framerefreshTimer);
 
 
@@ -100,7 +109,28 @@ void refreshFrameCb() {
 		flicker = 1;
 	}
 
-	if(MODE == FLICKER_BUFFER && (framecount % (flashspeed * 2 )) == 0) {
+	unsigned char tmpbright = brightness;
+	if(MODEFLASHPULSE == FLICKER_PULSE) {
+				if(pulsecount <= (brightness) && pulsedir == 0) {
+					pulsecount += (flashspeedfade);
+					if(pulsecount >= (brightness)) {
+						pulsedir = 1;
+					}
+				}
+
+				if(pulsecount >= 0 && pulsedir == 1) {
+					pulsecount -= (flashspeedfade);
+					if(pulsecount <= 0) {
+						pulsedir = 0;
+					}
+				}
+				if(tmpbright - pulsecount > 0 && tmpbright - pulsecount < 255) {
+					tmpbright -= (pulsecount);
+				}
+
+	}
+
+	if(MODE == FLICKER_BUFFER && (framecount % (flashspeedicons * 2 )) == 0) {
 		if(activebuffer == 1) {
 			activebuffer = 2;
 		} else if(activebuffer == 2) {
@@ -108,12 +138,17 @@ void refreshFrameCb() {
 		}
 	}
 
-	if(framecount % flashspeed == 0) {
+	if(framecount % flashspeedtext == 0) {
 		textframeoffset++;
 	}
 
 	framecount++;
-	WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, brightness);
+
+
+	//rainbow_copybuffer(1, framecount);
+	//activebuffer = 1;
+
+	WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, tmpbright);
 	system_soft_wdt_feed();
 
 	ReleaseMutex(&refreshMutext);
@@ -122,11 +157,11 @@ void refreshFrameCb() {
 }
 
 
-void refreshFrameCb2() {
+void ICACHE_FLASH_ATTR refreshFrameCb2() {
 
 	os_timer_disarm(&framerefreshTimer);
 	if(!GetMutex(&refreshMutext)) {
-		os_printf("read - Could not get mutex \r\n");
+		LOG_E(LOG_USER, LOG_USER_TAG,"ERROR  Could not get mutex");
 		os_timer_arm(&framerefreshTimer, FRAME_REFRESH_RETRYSPEED, 0);
 		return;
 	}
@@ -144,19 +179,31 @@ void refreshFrameCb2() {
 
 
 
-void sendchipid_package(struct udp_pcb *pcb) {
+void ICACHE_FLASH_ATTR sendchipid_package(struct udp_pcb *pcb) {
+	struct ip_addr ipSend;
+
 	char data[6] = {0xFE, i1 , i2, i3, i4, initCommand };
 	struct pbuf* b = pbuf_alloc(PBUF_TRANSPORT, 6, PBUF_RAM);
 	os_memcpy (b->payload, data, 6);
+
+
+	IP4_ADDR(&ipSend, 255, 255, 255, 255);
+	pcb->multicast_ip = ipSend;
+	pcb->remote_ip = ipSend;
+	pcb->remote_port = 9090;
 	udp_sendto(pcb, b, IP_ADDR_BROADCAST, 9090);
 	pbuf_free(b);
 }
-void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
+
+
+void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port, char forward) {
 	int length = p->len;
 	char * pusrdata = p->payload;
 	int i = 0;
 	system_soft_wdt_feed();
 	static int precommand = 0;
+
+
 	if(length > 2) {
 			if(!GetMutex(&refreshMutext)) {
 				LOG_E(LOG_UDP, LOG_UDP_TAG, "write - Could not get mutex ");
@@ -166,13 +213,20 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 			}
 
 
+
+
+			if(multicastlock == 1 && pusrdata[0] != 0xFE && pusrdata[0] != 0xFF &&   pusrdata[0] != 0x0E && pusrdata[0] != 0xFD && forward != 1) {
+				ReleaseMutex(&refreshMutext);
+				pbuf_free(p);
+				return;
+			}
+
 			if(pusrdata[0] == 0xFE) {
 					initCommand++;
 					LOG_I(LOG_UDP, LOG_UDP_TAG, "Got init command, processing:");
 					pusrdata = &pusrdata[1];
 					length = length - 1;
 			}
-
 
 			switch (pusrdata[0]) {
 				case 0x00:
@@ -187,7 +241,7 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					break;
 				case 0x01:
 					if(precommand != pusrdata[0])
-					LOG_I(LOG_UDP, LOG_UDP_TAG, "Setting stream of data");
+					LOG_T(LOG_UDP, LOG_UDP_TAG, "Setting stream of data");
 					writestream(pusrdata[1], &pusrdata[2], length-2);
 					activebuffer = pusrdata[1];
 					break;
@@ -219,6 +273,7 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting speed: %d", (20 - pusrdata[1]));
 					flashspeed = 20 - pusrdata[1];
 					break;
+
 				case 0x05:
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting dim level: %d", pusrdata[1]);
 					brightness = pusrdata[1];
@@ -250,8 +305,59 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 					fontbackB = pusrdata[3];
 					LOG_I(LOG_UDP,  LOG_UDP_TAG,  "Setting font background color");
 					break;
+				case 0x0A:
+					if(pusrdata[1] == 0x00) {
+						MODEFLASHPULSE = FLICKER_PULSE;
+						LOG_I(LOG_UDP, LOG_UDP_TAG, "Setting mode to pulse");
+					} else {
+						MODEFLASHPULSE = NORMAL;
+						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
+					}
+					break;
+				case 0x0B:
+					if(pusrdata[1] > 19) {
+						pusrdata[1] = 19;
+					}
+					if(pusrdata[1] < 0) {
+						pusrdata[1] = 0;
+					}
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting text speed: %d", (20 - pusrdata[1]));
+					flashspeedtext = 20 - pusrdata[1];
+					break;
+				case 0x0C:
+					if(pusrdata[1] > 20) {
+						pusrdata[1] = 20;
+					}
+					if(pusrdata[1] < 2) {
+						pusrdata[1] = 2;
+					}
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting fade speed: %d", ( pusrdata[1]));
+					flashspeedfade = pusrdata[1];
+					break;
+				case 0x0D:
+					if(pusrdata[1] > 19) {
+						pusrdata[1] = 19;
+					}
+					if(pusrdata[1] < 0) {
+						pusrdata[1] = 0;
+					}
+					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting text speed: %d", (20 - pusrdata[1]));
+					flashspeedicons = 20 - pusrdata[1];
+					break;
+				case 0x0E:
+					multicastlock = pusrdata[1];
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Settings multicast lock to: %d", multicastlock);
+					break;
+				case 0xFD:
+					LOG_T(LOG_UDP, LOG_UDP_TAG, "Got forward package");
+					p->payload = &pusrdata[1];
+					p->len = p->len - 1;
+					ReleaseMutex(&refreshMutext);
+					udp_receiver(arg,pcb, p, addr, port, 1);
+					break;
+
 				case 0xFF:
-					LOG_I(LOG_UDP, LOG_UDP_TAG, "Ask for ID package");
+					LOG_T(LOG_UDP, LOG_UDP_TAG, "Ask for ID package");
 					sendchipid_package(pcb);
 					break;
 				default:
@@ -262,8 +368,18 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 			}
 			ReleaseMutex(&refreshMutext);
 		}
+	if(forward == 1) {
+		p->len = p->len - 1;
+		p->payload = &pusrdata[0]-1;
+	}
 	pbuf_free(p);
 }
+
+void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,  ip_addr_t *addr, u16_t port) {
+	udp_receiver(arg, pcb, p, addr, port, 0);
+}
+
+
 
 void ICACHE_FLASH_ATTR
 shell_init(void)
@@ -277,35 +393,26 @@ shell_init(void)
 		LOG_E(LOG_USER, LOG_USER_TAG, "Could not create new udp socket");
 	}
 
-	IP4_ADDR(&ipSend, 255, 255, 255, 255);
-	pUdpConnection->multicast_ip = ipSend;
-	pUdpConnection->remote_ip = ipSend;
-	pUdpConnection->remote_port = 8080;
-	pUdpConnection->ttl = 1;
-	pUdpConnection->so_options |= SOF_BROADCAST;
-	pUdpConnection->so_options |= SOF_ACCEPTCONN;
-	pUdpConnection->so_options |= SOF_REUSEADDR;
+	IP4_ADDR(&ipSend, 224, 0, 0, 1);
+	int iret = igmp_joingroup(IP_ADDR_ANY,(struct ip_addr *)(&ipSend));
+	if(iret != 0) {
+		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  igmp_joingroup" );
+	}
+//	pUdpConnection->multicast_ip = ipSend;
+//	pUdpConnection->remote_ip = ipSend;
+//	pUdpConnection->remote_port = 8080;
+//	pUdpConnection->ttl = 1;
+//	pUdpConnection->so_options |= SOF_BROADCAST;
+//	pUdpConnection->so_options |= SOF_ACCEPTCONN;
+//	pUdpConnection->so_options |= SOF_REUSEADDR;
 
 
 	err = udp_bind(pUdpConnection, IP_ADDR_ANY, 8080);
+	if(err != 0) {
+		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  udp_bind");
+	}
 	udp_recv(pUdpConnection, handle_udp_recv, pUdpConnection);
 
-	for(int i = 0; i < 10; i++) {
-		struct udp_pcb * p = udp_new();
-		p->multicast_ip = ipSend;
-		p->remote_ip = ipSend;
-		p->remote_port = 8080;
-		p->ttl = 1;
-		p->so_options |= SOF_BROADCAST;
-		p->so_options |= SOF_ACCEPTCONN;
-		p->so_options |= SOF_REUSEADDR;
-
-		err = udp_bind(p, IP_ADDR_ANY, 8080);
-		udp_recv(p, handle_udp_recv, p);
-
-		err = udp_bind(p, IP_ADDR_ANY, 8080);
-		udp_recv(p, handle_udp_recv, p);
-	}
 
 }
 
@@ -313,7 +420,7 @@ shell_init(void)
 
 void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
 	if(evt->event == EVENT_STAMODE_GOT_IP) {
-		LOG_W(LOG_USER,  LOG_USER_TAG,"Connected to AP, got ip");
+		LOG_I(LOG_USER,  LOG_USER_TAG,"Connected to AP, got ip");
 		shell_init();
 	}
 	if(evt->event == EVENT_STAMODE_DISCONNECTED) {
@@ -330,8 +437,8 @@ void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
 void ICACHE_FLASH_ATTR connectToAp() {
 	char * ap = "LedAccess";
 	char * pass = "test12345";
-	wifi_set_phy_mode( PHY_MODE_11N );
-
+	//wifi_set_phy_mode( PHY_MODE_11N );
+	wifi_set_phy_mode(PHY_MODE_11B);
 	LOG_I(LOG_USER,  LOG_USER_TAG,"Connecting to AP: %s", ap);
 
 	struct station_config apconf;
@@ -344,13 +451,8 @@ void ICACHE_FLASH_ATTR connectToAp() {
 	wifi_set_event_handler_cb(wifi_event_cb);
 }
 
-void watchdogCb() {
-	os_timer_disarm(&watchdogTimer);
-	LOG_W(LOG_USER, "Watchdog", "Tick");
-	os_timer_arm(&watchdogTimer, 60000, 0);
-}
 
-void user_done(void) {
+void ICACHE_FLASH_ATTR user_done(void) {
 	os_printf("\r\n"); // clear output
 
 	LOG_I(LOG_USER,  LOG_USER_TAG, "Starting up");
@@ -366,14 +468,15 @@ void user_done(void) {
 	i4= (chip_id & 0xff);
 
 
-	 PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
-	 PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO5_U); // disable pullodwn
-	 GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS,BIT5);
-	 GPIO_OUTPUT_SET(GPIO_ID_PIN(5), 1);
+//	 PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, FUNC_GPIO12);
+//	 PIN_PULLUP_DIS(PERIPHS_IO_MUX_MTDI_U); // disable pullodwn
+//	 GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS,BIT12);
+//	 GPIO_OUTPUT_SET(GPIO_ID_PIN(12), 1);
+//
 
-
-	char outbuffer[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-	WS2812OutBuffer( outbuffer, 6 , 0); //Initialize the output.
+//	char outbuffer[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+//	WS2812OutBuffer( outbuffer, 6 , 0); //Initialize the output.
+	ws2812_init();
 
 	CreateMutux(&refreshMutext);
 
@@ -383,10 +486,6 @@ void user_done(void) {
 	os_timer_setfn(&framerefreshTimer, refreshFrameCb, NULL);
 	os_timer_arm(&framerefreshTimer, FRAME_REFRESH_SPEED, 0);
 
-
-	os_timer_disarm(&watchdogTimer);
-	os_timer_setfn(&watchdogTimer, watchdogCb, NULL);
-	os_timer_arm(&watchdogTimer, 5000, 0);
 }
 
 void user_init() {
