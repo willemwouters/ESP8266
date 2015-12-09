@@ -150,14 +150,15 @@ void ICACHE_FLASH_ATTR WS2812OutBuffer( uint8_t * buffer, uint16_t length, int d
 {
 	uint16_t i;
 
+	ws2812_push( lTmlBuf, length );
 
-	GPIO_OUTPUT_SET(GPIO_ID_PIN(WSGPIO), 0);
+	//GPIO_OUTPUT_SET(GPIO_ID_PIN(WSGPIO), 0);
 
 
-	int min = 0;
+	//int min = 0;
 
-	os_intr_lock();
-
+	//os_intr_lock();
+/*
 	for( i = 0; i < length; i++ )
 	{
 #ifdef REALROWS
@@ -185,7 +186,7 @@ void ICACHE_FLASH_ATTR WS2812OutBuffer( uint8_t * buffer, uint16_t length, int d
 	}
 	os_intr_unlock();
 	system_soft_wdt_feed();
-
+*/
 	//
 	//os_printf("\r\n");
 	//reset will happen when it's low long enough.
