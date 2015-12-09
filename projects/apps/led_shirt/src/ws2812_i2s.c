@@ -494,6 +494,16 @@ void ws2812_push( uint8_t * buffer, uint16_t buffersize )
 
 	for( place = 0; place < buffersize; place++ )
 	{
+#ifdef REALROWS
+			int tot = place / 3;
+			if(tot == 0 || tot == 15 || tot == 31 || tot == 47 || tot == 63 || tot == 79 || tot == 95  ) {
+				if(tot == 0) {
+					place = place + 3;
+				} else {
+					place = place + 6;
+				}
+			}
+#endif
 		uint8_t btosend = buffer[place];
 		*(bufferpl++) = bitpatterns[(btosend&0x0f)];
 		*(bufferpl++) = bitpatterns[(btosend>>4)&0x0f];

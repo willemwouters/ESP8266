@@ -48,7 +48,7 @@ int initCommand = 0;
 int flashspeed = 2;
 int flashspeedtext = 2;
 int flashspeedicons = 2;
-int flashspeedfade = 2;
+float flashspeedfade = 2;
 int multicastlock = 0;
 int textspeed = 1;
 
@@ -111,22 +111,22 @@ void ICACHE_FLASH_ATTR refreshFrameCb() {
 
 	unsigned char tmpbright = brightness;
 	if(MODEFLASHPULSE == FLICKER_PULSE) {
-				if(pulsecount <= (brightness) && pulsedir == 0) {
-					pulsecount += (flashspeedfade);
-					if(pulsecount >= (brightness)) {
-						pulsedir = 1;
-					}
-				}
-
-				if(pulsecount >= 0 && pulsedir == 1) {
-					pulsecount -= (flashspeedfade);
-					if(pulsecount <= 0) {
-						pulsedir = 0;
-					}
-				}
-				if(tmpbright - pulsecount > 0 && tmpbright - pulsecount < 255) {
-					tmpbright -= (pulsecount);
-				}
+		if(pulsedir == 0) {
+			pulsecount += (flashspeedfade / 2);
+			if(pulsecount >= (brightness)) {
+				pulsedir = 1;
+				pulsecount = brightness - 1;
+			}
+		} else {
+			pulsecount -= (flashspeedfade / 2);
+			if(pulsecount <= 0) {
+				pulsedir = 0;
+				pulsecount = 1;
+			}
+		}
+		if(tmpbright - pulsecount > 0 && tmpbright - pulsecount < 255) {
+			tmpbright -= (pulsecount);
+		}
 
 	}
 
@@ -145,8 +145,6 @@ void ICACHE_FLASH_ATTR refreshFrameCb() {
 	framecount++;
 
 
-	//rainbow_copybuffer(1, framecount);
-	//activebuffer = 1;
 
 	WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, tmpbright);
 	system_soft_wdt_feed();
@@ -186,7 +184,7 @@ void ICACHE_FLASH_ATTR sendchipid_package(struct udp_pcb *pcb) {
 	struct pbuf* b = pbuf_alloc(PBUF_TRANSPORT, 6, PBUF_RAM);
 	os_memcpy (b->payload, data, 6);
 
-
+	LOG_I(LOG_UDP, LOG_UDP_TAG, "Sending ID package");
 	IP4_ADDR(&ipSend, 255, 255, 255, 255);
 	pcb->multicast_ip = ipSend;
 	pcb->remote_ip = ipSend;
@@ -216,6 +214,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 
 
 			if(multicastlock == 1 && pusrdata[0] != 0xFE && pusrdata[0] != 0xFF &&   pusrdata[0] != 0x0E && pusrdata[0] != 0xFD && forward != 1) {
+				LOG_I(LOG_UDP, LOG_UDP_TAG, "Dropping packages, because multicast lock: type: %d", pusrdata[0]);
 				ReleaseMutex(&refreshMutext);
 				pbuf_free(p);
 				return;
@@ -277,6 +276,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 				case 0x05:
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting dim level: %d", pusrdata[1]);
 					brightness = pusrdata[1];
+					pulsecount = 0;
 					break;
 				case 0x06:
 					if(pusrdata[1] > 19) {
@@ -308,6 +308,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 				case 0x0A:
 					if(pusrdata[1] == 0x00) {
 						MODEFLASHPULSE = FLICKER_PULSE;
+						pulsecount = 0;
 						LOG_I(LOG_UDP, LOG_UDP_TAG, "Setting mode to pulse");
 					} else {
 						MODEFLASHPULSE = NORMAL;
@@ -328,11 +329,12 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					if(pusrdata[1] > 20) {
 						pusrdata[1] = 20;
 					}
-					if(pusrdata[1] < 2) {
-						pusrdata[1] = 2;
+					if(pusrdata[1] < 1) {
+						pusrdata[1] = 1;
 					}
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting fade speed: %d", ( pusrdata[1]));
 					flashspeedfade = pusrdata[1];
+					pulsecount = 0;
 					break;
 				case 0x0D:
 					if(pusrdata[1] > 19) {
@@ -357,7 +359,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					break;
 
 				case 0xFF:
-					LOG_T(LOG_UDP, LOG_UDP_TAG, "Ask for ID package");
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Ask for ID package");
 					sendchipid_package(pcb);
 					break;
 				default:
@@ -398,21 +400,13 @@ shell_init(void)
 	if(iret != 0) {
 		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  igmp_joingroup" );
 	}
-//	pUdpConnection->multicast_ip = ipSend;
-//	pUdpConnection->remote_ip = ipSend;
-//	pUdpConnection->remote_port = 8080;
-//	pUdpConnection->ttl = 1;
-//	pUdpConnection->so_options |= SOF_BROADCAST;
-//	pUdpConnection->so_options |= SOF_ACCEPTCONN;
-//	pUdpConnection->so_options |= SOF_REUSEADDR;
-
 
 	err = udp_bind(pUdpConnection, IP_ADDR_ANY, 8080);
 	if(err != 0) {
 		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  udp_bind");
 	}
 	udp_recv(pUdpConnection, handle_udp_recv, pUdpConnection);
-
+	sendchipid_package(pUdpConnection);
 
 }
 
@@ -467,15 +461,6 @@ void ICACHE_FLASH_ATTR user_done(void) {
 	i3= (chip_id & 0xff << 8);
 	i4= (chip_id & 0xff);
 
-
-//	 PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, FUNC_GPIO12);
-//	 PIN_PULLUP_DIS(PERIPHS_IO_MUX_MTDI_U); // disable pullodwn
-//	 GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS,BIT12);
-//	 GPIO_OUTPUT_SET(GPIO_ID_PIN(12), 1);
-//
-
-//	char outbuffer[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-//	WS2812OutBuffer( outbuffer, 6 , 0); //Initialize the output.
 	ws2812_init();
 
 	CreateMutux(&refreshMutext);
