@@ -233,11 +233,11 @@ void ICACHE_FLASH_ATTR connectToAp(char * ap, char * pass) {
 
 	system_restart();
 }
-int flicker = 0;
 
 void ICACHE_FLASH_ATTR refreshFrameCb() {
 	os_timer_disarm(&framerefreshTimer);
 
+	int flicker = 0;
 
 	if(!GetMutex(&refreshMutext)) {
 		LOG_E(LOG_USER,  LOG_USER_TAG, "read - Could not get mutex \r\n");
@@ -402,9 +402,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
 					pulsecount = 0;
-					activebuffer = 0;
 					framecount = 0;
-					flicker = 0;
 					break;
 				case 0x03:
 					if(pusrdata[1] == 0x00) {
@@ -415,9 +413,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
 					pulsecount = 0;
-					activebuffer = 0;
 					framecount = 0;
-					flicker = 0;
 					break;
 				case 0x04:
 					if(pusrdata[1] > 19) {
@@ -429,18 +425,14 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting speed: %d", (20 - pusrdata[1]));
 					flashspeed = 20 - pusrdata[1];
 					pulsecount = 0;
-					activebuffer = 0;
 					framecount = 0;
-					flicker = 0;
 					break;
 
 				case 0x05:
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting dim level: %d", pusrdata[1]);
 					brightness = pusrdata[1];
 					pulsecount = 0;
-					activebuffer = 0;
 					framecount = 0;
-					flicker = 0;
 					break;
 				case 0x06:
 					if(pusrdata[1] > 19) {
@@ -478,9 +470,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
 					pulsecount = 0;
-					activebuffer = 0;
 					framecount = 0;
-					flicker = 0;
 					break;
 				case 0x0B:
 					if(pusrdata[1] > 19) {
@@ -499,9 +489,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting fade speed: %d", ( pusrdata[1]));
 					flashspeedfade = pusrdata[1];
 					pulsecount = 0;
-					activebuffer = 0;
 					framecount = 0;
-					flicker = 0;
 					break;
 				case 0x0D:
 					if(pusrdata[1] > 19) {
