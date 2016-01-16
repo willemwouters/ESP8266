@@ -65,6 +65,12 @@ int FRAME_REFRESH_SPEED =  (1000 / FRAMESPEED); // lets assume 5us for framerese
 long framecount = 0;
 long textframeoffset = 0;
 
+bool wifi_softap_set_dhcps_lease(struct dhcps_lease *please);
+bool wifi_softap_dhcps_start(void);
+bool wifi_softap_dhcps_stop(void);
+void connectToAp(char * ap, char * pass);
+
+
 int BrightnessE[256] = { 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3,
 						3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5,
 					5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7,
@@ -86,6 +92,149 @@ void refreshFrameCb2();
 float pulsecount = 0;
 int pulsedir = 0;
 
+int disconnectcount = 0;
+int disconnecttry = 0;
+void sendchipid_package(struct udp_pcb *pcb);
+void user_set_softap_config();
+void shell_init();
+
+void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
+	if(evt->event == EVENT_STAMODE_GOT_IP) {
+		LOG_I(LOG_USER,  LOG_USER_TAG,"Connected to AP, got ip");
+//		if(pUdpConnection!= NULL) {
+//			udp_disconnect(pUdpConnection);
+//			udp_remove(pUdpConnection);
+//			pUdpConnection = NULL;
+//		}
+		wifi_set_opmode(STATION_MODE);
+		//shell_init();
+		struct udp_pcb *  p = udp_new();
+		if(p != NULL) {
+			sendchipid_package(p);
+			udp_remove(p);
+		}
+		disconnectcount = 0;
+	}
+	if(evt->event == EVENT_SOFTAPMODE_STACONNECTED) {
+//		if(pUdpConnection!= NULL) {
+//			udp_disconnect(pUdpConnection);
+//			udp_remove(pUdpConnection);
+//			pUdpConnection = NULL;
+//		}
+//		//user_set_softap_config();
+//		shell_init();
+	}
+	if(evt->event == EVENT_SOFTAPMODE_PROBEREQRECVED) {
+//		if(pUdpConnection!= NULL) {
+//			udp_disconnect(pUdpConnection);
+//			udp_remove(pUdpConnection);
+//			pUdpConnection = NULL;
+//		}
+//		shell_init();
+	}
+
+
+	if(evt->event == EVENT_STAMODE_DISCONNECTED) {
+			LOG_W(LOG_USER,  LOG_USER_TAG, "Disconnected from AP %d", disconnectcount);
+			initCommand = 0;
+			disconnectcount++;
+			if(disconnectcount > 1620) {
+				connectToAp("", "");
+				if(pUdpConnection!= NULL) {
+					udp_disconnect(pUdpConnection);
+					udp_remove(pUdpConnection);
+					pUdpConnection = NULL;
+				}
+
+				wifi_station_disconnect();
+				wifi_set_opmode(STATIONAP_MODE);
+				user_set_softap_config();
+				disconnectcount = 0;
+				disconnecttry++;
+				wifi_station_set_auto_connect(true);
+				system_restart();
+			}
+	}
+
+}
+
+
+void ICACHE_FLASH_ATTR
+user_set_softap_config()
+{
+  // struct softap_config config;
+//   uint8 macaddr[6];
+//   wifi_softap_get_config(&config); // Get config first.
+//
+//   os_memset(config.ssid, 0, 32);
+//   os_memset(config.password, 0, 64);
+//   os_memcpy(config.ssid, "ESP8266", 7);
+//   os_memcpy(config.password, "12345678", 8);
+//   config.authmode = AUTH_WPA_WPA2_PSK;
+//   config.ssid_len = 0;// or its actual length
+//   config.max_connection = 20; // how many stations can connect to ESP8266 softAP at most.
+//   config.beacon_interval = 10;
+//
+
+	struct ip_addr ipSend;
+
+
+
+	IP4_ADDR(&ipSend, 224, 0, 0, 1);
+	int iret = igmp_leavegroup(IP_ADDR_ANY,(struct ip_addr *)(&ipSend));
+	wifi_softap_dhcps_stop();
+
+
+	struct softap_config softap;
+	memset(&softap, 0, sizeof(softap));
+	os_sprintf((char*)softap.ssid, "ESP8266");
+	softap.ssid_len = 7;
+	softap.authmode = AUTH_WPA_WPA2_PSK;
+	os_sprintf(softap.password, "12345678");
+	softap.password[8] = 0;
+	softap.channel = 1;
+	softap.beacon_interval = 100;
+	softap.max_connection = 10;
+	wifi_softap_set_config(&softap);
+
+
+	struct ip_info info;
+	IP4_ADDR(&info.ip, 192, 168, 4, 1);
+	IP4_ADDR(&info.netmask, 255, 255, 255, 0);
+	IP4_ADDR(&info.gw, 192, 168, 4, 254);
+	wifi_set_ip_info(SOFTAP_IF, &info);
+	struct dhcps_lease dhcp;
+	IP4_ADDR(&dhcp.start_ip, 192, 168, 4, 100);
+	IP4_ADDR(&dhcp.end_ip, 192, 168, 4, 199);
+	wifi_softap_set_dhcps_lease(&dhcp);
+
+	wifi_softap_dhcps_start();
+
+	os_printf("Setting to AP mode, dhcps active \r\n" );
+
+       //wifi_station_set_auto_connect(false);
+
+}
+
+void ICACHE_FLASH_ATTR connectToAp(char * ap, char * pass) {
+	LOG_I(LOG_USER,  LOG_USER_TAG,"Connecting to AP: %s", ap);
+	wifi_set_event_handler_cb(wifi_event_cb);
+	wifi_set_opmode(STATION_MODE);
+
+	struct station_config apconf;
+	wifi_station_set_auto_connect(true);
+	wifi_station_get_config(&apconf);
+	//apconf.beacon_interval = 100;
+	os_strncpy((char*)apconf.ssid, ap, 32);
+	os_strncpy((char*)apconf.password, pass, 64);
+	wifi_station_set_config(&apconf);
+	wifi_station_set_auto_connect(true);
+	wifi_station_connect();
+
+	system_restart();
+}
+int flicker = 0;
+
 void ICACHE_FLASH_ATTR refreshFrameCb() {
 	os_timer_disarm(&framerefreshTimer);
 
@@ -96,7 +245,6 @@ void ICACHE_FLASH_ATTR refreshFrameCb() {
 		return;
 	}
 
-	int flicker = 0;
 
 	if(activebuffer == 0) {
 		if(scroll != 1) {
@@ -141,10 +289,7 @@ void ICACHE_FLASH_ATTR refreshFrameCb() {
 	if(framecount % flashspeedtext == 0) {
 		textframeoffset++;
 	}
-
 	framecount++;
-
-
 
 	WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, tmpbright);
 	system_soft_wdt_feed();
@@ -182,15 +327,16 @@ void ICACHE_FLASH_ATTR sendchipid_package(struct udp_pcb *pcb) {
 
 	char data[6] = {0xFE, i1 , i2, i3, i4, initCommand };
 	struct pbuf* b = pbuf_alloc(PBUF_TRANSPORT, 6, PBUF_RAM);
-	os_memcpy (b->payload, data, 6);
-
-	LOG_I(LOG_UDP, LOG_UDP_TAG, "Sending ID package");
-	IP4_ADDR(&ipSend, 255, 255, 255, 255);
-	pcb->multicast_ip = ipSend;
-	pcb->remote_ip = ipSend;
-	pcb->remote_port = 9090;
-	udp_sendto(pcb, b, IP_ADDR_BROADCAST, 9090);
-	pbuf_free(b);
+	if(b != NULL) {
+		os_memcpy (b->payload, data, 6);
+		LOG_I(LOG_UDP, LOG_UDP_TAG, "Sending ID package");
+		IP4_ADDR(&ipSend, 255, 255, 255, 255);
+		pcb->multicast_ip = ipSend;
+		pcb->remote_ip = ipSend;
+		pcb->remote_port = 9090;
+		udp_sendto(pcb, b, IP_ADDR_BROADCAST, 9090);
+		pbuf_free(b);
+	}
 }
 
 
@@ -198,9 +344,12 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 	int length = p->len;
 	char * pusrdata = p->payload;
 	int i = 0;
+	char * tssid ;
+	char * pssid ;
 	system_soft_wdt_feed();
 	static int precommand = 0;
-
+	unsigned int ssidlen=0;
+	unsigned int plen=0;
 
 	if(length > 2) {
 			if(!GetMutex(&refreshMutext)) {
@@ -252,6 +401,10 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 						MODEFLASH = NORMAL;
 						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
+					pulsecount = 0;
+					activebuffer = 0;
+					framecount = 0;
+					flicker = 0;
 					break;
 				case 0x03:
 					if(pusrdata[1] == 0x00) {
@@ -261,6 +414,10 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 						MODE = NORMAL;
 						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
+					pulsecount = 0;
+					activebuffer = 0;
+					framecount = 0;
+					flicker = 0;
 					break;
 				case 0x04:
 					if(pusrdata[1] > 19) {
@@ -271,12 +428,19 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					}
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting speed: %d", (20 - pusrdata[1]));
 					flashspeed = 20 - pusrdata[1];
+					pulsecount = 0;
+					activebuffer = 0;
+					framecount = 0;
+					flicker = 0;
 					break;
 
 				case 0x05:
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting dim level: %d", pusrdata[1]);
 					brightness = pusrdata[1];
 					pulsecount = 0;
+					activebuffer = 0;
+					framecount = 0;
+					flicker = 0;
 					break;
 				case 0x06:
 					if(pusrdata[1] > 19) {
@@ -308,12 +472,15 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 				case 0x0A:
 					if(pusrdata[1] == 0x00) {
 						MODEFLASHPULSE = FLICKER_PULSE;
-						pulsecount = 0;
 						LOG_I(LOG_UDP, LOG_UDP_TAG, "Setting mode to pulse");
 					} else {
 						MODEFLASHPULSE = NORMAL;
 						LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting mode to normal");
 					}
+					pulsecount = 0;
+					activebuffer = 0;
+					framecount = 0;
+					flicker = 0;
 					break;
 				case 0x0B:
 					if(pusrdata[1] > 19) {
@@ -326,15 +493,15 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					flashspeedtext = 20 - pusrdata[1];
 					break;
 				case 0x0C:
-					if(pusrdata[1] > 20) {
-						pusrdata[1] = 20;
-					}
 					if(pusrdata[1] < 1) {
 						pusrdata[1] = 1;
 					}
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting fade speed: %d", ( pusrdata[1]));
 					flashspeedfade = pusrdata[1];
 					pulsecount = 0;
+					activebuffer = 0;
+					framecount = 0;
+					flicker = 0;
 					break;
 				case 0x0D:
 					if(pusrdata[1] > 19) {
@@ -349,6 +516,20 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 				case 0x0E:
 					multicastlock = pusrdata[1];
 					LOG_I(LOG_UDP, LOG_UDP_TAG, "Settings multicast lock to: %d", multicastlock);
+					break;
+				case 0xFC:
+					ssidlen = pusrdata[1];
+					plen = pusrdata[2];
+					os_printf("length ssid: %d \r\n", ssidlen);
+					os_printf("length password: %d \r\n", plen);
+					tssid = (char*) mem_malloc(ssidlen + 1);
+					pssid = (char*) mem_malloc(plen+1);
+					os_memset(tssid, 0, ssidlen+1);
+					os_memset(pssid, 0, plen+1);
+					ets_memcpy(tssid, &pusrdata[3], ssidlen);
+					ets_memcpy(pssid, &pusrdata[ssidlen+3], plen);
+					connectToAp(tssid, pssid);
+					os_printf("ssid: %s, pssid: %s \r\n", tssid, pssid);
 					break;
 				case 0xFD:
 					LOG_T(LOG_UDP, LOG_UDP_TAG, "Got forward package");
@@ -382,7 +563,6 @@ void ICACHE_FLASH_ATTR handle_udp_recv(void *arg, struct udp_pcb *pcb, struct pb
 }
 
 
-
 void ICACHE_FLASH_ATTR
 shell_init(void)
 {
@@ -395,55 +575,21 @@ shell_init(void)
 		LOG_E(LOG_USER, LOG_USER_TAG, "Could not create new udp socket");
 	}
 
-	IP4_ADDR(&ipSend, 224, 0, 0, 1);
-	int iret = igmp_joingroup(IP_ADDR_ANY,(struct ip_addr *)(&ipSend));
-	if(iret != 0) {
-		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  igmp_joingroup" );
-	}
+//	IP4_ADDR(&ipSend, 224, 0, 0, 1);
+//	int iret = igmp_joingroup(IP_ADDR_ANY,(struct ip_addr *)(&ipSend));
+//	if(iret != 0) {
+//		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  igmp_joingroup" );
+//	}
 
 	err = udp_bind(pUdpConnection, IP_ADDR_ANY, 8080);
 	if(err != 0) {
 		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  udp_bind");
 	}
 	udp_recv(pUdpConnection, handle_udp_recv, pUdpConnection);
-	sendchipid_package(pUdpConnection);
 
 }
 
 
-
-void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
-	if(evt->event == EVENT_STAMODE_GOT_IP) {
-		LOG_I(LOG_USER,  LOG_USER_TAG,"Connected to AP, got ip");
-		shell_init();
-	}
-	if(evt->event == EVENT_STAMODE_DISCONNECTED) {
-		if(pUdpConnection != NULL) {
-			LOG_W(LOG_USER,  LOG_USER_TAG, "Disconnected from AP");
-			udp_disconnect(pUdpConnection);
-			udp_remove(pUdpConnection);
-			pUdpConnection = NULL;
-			initCommand = 0;
-		}
-	}
-
-}
-void ICACHE_FLASH_ATTR connectToAp() {
-	char * ap = "LedAccess";
-	char * pass = "test12345";
-	//wifi_set_phy_mode( PHY_MODE_11N );
-	wifi_set_phy_mode(PHY_MODE_11B);
-	LOG_I(LOG_USER,  LOG_USER_TAG,"Connecting to AP: %s", ap);
-
-	struct station_config apconf;
-	wifi_station_set_auto_connect(true);
-	wifi_set_opmode(STATION_MODE);
-	wifi_station_get_config(&apconf);
-	os_strncpy((char*)apconf.ssid, ap, 32);
-	os_strncpy((char*)apconf.password, pass, 64);
-	wifi_station_set_config(&apconf);
-	wifi_set_event_handler_cb(wifi_event_cb);
-}
 
 
 void ICACHE_FLASH_ATTR user_done(void) {
@@ -454,7 +600,27 @@ void ICACHE_FLASH_ATTR user_done(void) {
 	if(!t) {
 		LOG_E(LOG_USER,  LOG_USER_TAG, "Could not set to 160mhz");
 	}
-	connectToAp();
+	wifi_set_phy_mode(PHY_MODE_11B);
+	wifi_set_event_handler_cb(wifi_event_cb);
+	//connectToAp();
+
+	struct station_config apconf;
+	wifi_station_get_config(&apconf);
+	shell_init();
+
+
+	os_printf("Stored ssid: -%s- -%d- \r\n", apconf.ssid, os_strlen(apconf.ssid));
+	if(os_strlen(apconf.ssid) == 0) {
+		user_set_softap_config();
+	} else {
+		wifi_station_set_auto_connect(true);
+		wifi_station_set_config(&apconf);
+		wifi_station_set_auto_connect(true);
+		wifi_station_connect();
+	}
+
+	//wifi_softap_dhcps_stop();
+
 	chip_id = system_get_chip_id();
 	i1 = (chip_id & 0xff << 24);
 	i2= (chip_id & 0xff << 16);
@@ -476,7 +642,7 @@ void ICACHE_FLASH_ATTR user_done(void) {
 void user_init() {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200); //ReceiveUART, true); // baudrate, callback, eolchar, printftouart
 
-	gdb_init();
+	//gdb_init();
 
 	system_init_done_cb(user_done);
 }
