@@ -19,6 +19,9 @@
 #include "lwip/tcp.h"
 #include "lwip_websocket.h"
 #include "rofs.h"
+#include "gpio.h"
+
+#include "driver/pwm.h"
 
 extern const uint8_t rofs_data[];
 extern const RO_FS ro_file_system;
@@ -93,6 +96,12 @@ connections* getConnection(struct tcp_pcb * pcb) {
 
 void my_server_init(void) {
 	struct tcp_pcb *pcb;
+
+	uint8_t PWM_CH[]= {0, 0, 0};   // PIN CONFIG IS IN PWM.h
+	uint16_t freq = 100;
+	pwm_init(freq, PWM_CH);
+	pwm_start();
+
 
 	pcb = tcp_new();
 	tcp_bind(pcb, IP_ADDR_ANY, 8000); //server port for incoming connection
@@ -197,6 +206,36 @@ void ICACHE_FLASH_ATTR websocket_parse(char * data, size_t dataLen, struct tcp_p
 		char * DATA = &data[offset];
 		DATA[SIZE] = 0;
 		os_printf("SIZE: %d  tSIZE: %d, DATA: =%s=  \r\n", SIZE, dataLen, DATA);
+
+
+
+		if(strstr(DATA, "R:") != 0) {
+			char dat[3] = { 0 };
+			os_memcpy(dat, &DATA[2], SIZE);
+			os_printf("%s\r\n", dat);
+			int i = atoi(dat);
+			os_printf("%d\r\n", i);
+			pwm_set_duty(i, 1);
+			pwm_start();
+		} else if(strstr(DATA, "G:") != 0) {
+			char dat[3] = { 0 };
+			os_memcpy(dat, &DATA[2], SIZE);
+			os_printf("%s\r\n", dat);
+			int i = atoi(dat);
+			os_printf("%d\r\n", i);
+			pwm_set_duty(i, 0);
+			pwm_start();
+		} else if(strstr(DATA, "B:") != 0) {
+			char dat[3] = { 0 };
+			os_memcpy(dat, &DATA[2], SIZE);
+			os_printf("%s\r\n", dat);
+			int i = atoi(dat);
+			os_printf("%d\r\n", i);
+			pwm_set_duty(i, 2);
+			pwm_start();
+		}
+
+
 		if (SIZE + offset < dataLen) {
 			websocket_parse(&data[SIZE + offset], dataLen - (SIZE + offset), pcb);
 		}

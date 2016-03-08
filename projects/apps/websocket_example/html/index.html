@@ -27,7 +27,7 @@
                
                // Let us open a web socket
                if(ws == null) {
-                ws = new WebSocket("ws://192.168.178.15:8000/echo");
+                ws = new WebSocket("ws://192.168.178.16:8000/echo");
                }
 				
                ws.onopen = function()
@@ -150,6 +150,15 @@ function sleepFor( sleepDuration ){
                 startTime=then;
                 animate();
                 
+                $("#r").change(function(data) {
+                    ws.send("R:" + $("#r").val());
+                });
+                $("#g").change(function(data) {
+                    ws.send("G:" + $("#g").val());
+                });
+                $("#b").change(function(data) {
+                    ws.send("B:" + $("#b").val());
+                });
                 
             });
       </script>
@@ -158,9 +167,12 @@ function sleepFor( sleepDuration ){
    <body>
    
       <div id="sse">
-         <a href="javascript:WebSocketTest()">Run WebSocket</a>
+         <a href="javascript:WebSocketTest()">CONNECT</a>
          <a href="javascript:sendSocket()">Run SEND</a>
-          <a href="javascript:addData(Math.random() * 100)">Run SEND</a>
+          <br /> R:<input type="range" id="r" name="r" min="0" max="255">
+          <br /> G:<input type="range" id="g" name="g" min="0" max="255">
+          <br /> B:<input type="range" id="b" name="b" min="0" max="255">                   
+          
       </div>
       
       <canvas id="graph" width="1000" height="650">   
