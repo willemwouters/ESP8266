@@ -5,13 +5,14 @@
 #include "driver/uart.h"
 #include "lwip_websocket.h"
 #include "gpio.h"
+#include "driver/pwm.h"
 
 static ETSTimer tickTimer;
 
 
 void ICACHE_FLASH_ATTR connectToAp() {
-    char * ap = "1234";
-    char * pass = "1234";
+    char * ap = "123";
+    char * pass = "123";
     wifi_set_phy_mode( PHY_MODE_11N );
     struct station_config apconf;
     wifi_station_set_auto_connect(true);
@@ -37,7 +38,33 @@ void tickCb() {
 		os_timer_arm(&tickTimer, 100, 0);
 	}
 }
-
+void websocket_callback(char * data, int size) {
+	if(strstr(data, "R:") != 0) {
+		char dat[3] = { 0 };
+		os_memcpy(dat, &data[2], size);
+		os_printf("%s\r\n", dat);
+		int i = atoi(dat);
+		os_printf("%d\r\n", i);
+		pwm_set_duty(i, 1);
+		pwm_start();
+	} else if(strstr(data, "G:") != 0) {
+		char dat[3] = { 0 };
+		os_memcpy(dat, &data[2], size);
+		os_printf("%s\r\n", dat);
+		int i = atoi(dat);
+		os_printf("%d\r\n", i);
+		pwm_set_duty(i, 0);
+		pwm_start();
+	} else if(strstr(data, "B:") != 0) {
+		char dat[3] = { 0 };
+		os_memcpy(dat, &data[2], size);
+		os_printf("%s\r\n", dat);
+		int i = atoi(dat);
+		os_printf("%d\r\n", i);
+		pwm_set_duty(i, 2);
+		pwm_start();
+	}
+}
 void user_done() {
 	os_printf("Starting \r\n");
 	os_timer_disarm(&tickTimer);
@@ -71,7 +98,7 @@ void user_init(void) {
 	pwm_start();
 
 	connectToAp();
-	server_init();
+	server_init(websocket_callback);
 	system_init_done_cb(user_done);
 }
 

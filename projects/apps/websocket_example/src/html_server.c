@@ -10,15 +10,18 @@
 #include "html_server.h"
 #include "html_dataparser.h"
 
+static websocket_gotdata data_callback;
 
 #define HTTP_BUFFER_SIZE (1000)
 
-void server_init(void) {
+void server_init(websocket_gotdata call) {
 	struct tcp_pcb *pcb;
 	pcb = tcp_new();
 	tcp_bind(pcb, IP_ADDR_ANY, 8000); //server port for incoming connection
 	pcb = tcp_listen(pcb);
 	tcp_accept(pcb, server_accept);
+	data_callback = call;
+	websocket_init(call);
 }
 
 static void server_close(struct tcp_pcb *pcb) {
@@ -133,7 +136,6 @@ static err_t server_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t e
 			if (err == 0) {
 				server_close(pcb);
 			}
-			con->websocket = 0;
 		}
 	} else {
 		os_printf("\nserver_recv(): Errors-> ");
@@ -185,7 +187,7 @@ static void server_err(void *arg, err_t err) {
 	LWIP_UNUSED_ARG(arg);
 	LWIP_UNUSED_ARG(err);
 	os_printf("\nserver_err(): Fatal error, exiting...\n");
-	server_init(); // TODO
+	server_init(data_callback); // TODO
 	return;
 }
 

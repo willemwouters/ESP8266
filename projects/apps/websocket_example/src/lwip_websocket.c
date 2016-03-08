@@ -13,8 +13,12 @@
 #include "lwip_websocket.h"
 #include "html_dataparser.h"
 #include "connection_list.h"
-#include "gpio.h"
-#include "driver/pwm.h"
+
+static websocket_gotdata data_callback;
+
+void websocket_init(websocket_gotdata call) {
+	data_callback = call;
+}
 
 void ICACHE_FLASH_ATTR websocket_recv(char * string, char*url, connections* con, struct tcp_pcb *pcb, struct pbuf *p) {
 	if (strstr(string, "/echo") != 0) {
@@ -45,7 +49,6 @@ void ICACHE_FLASH_ATTR websocket_recv(char * string, char*url, connections* con,
 	} else if (con->websocket == 1) {
 		os_printf("WEBSOCKET MESSAGE \r\n");
 		websocket_parse(string, os_strlen(string), pcb);
-		con->websocket_done = 1;
 	}
 }
 
@@ -124,32 +127,8 @@ void ICACHE_FLASH_ATTR websocket_parse(char * data, size_t dataLen, struct tcp_p
 		os_printf("SIZE: %d  tSIZE: %d, DATA: =%s=  \r\n", SIZE, dataLen, DATA);
 
 
+		data_callback(DATA, SIZE);
 
-		if(strstr(DATA, "R:") != 0) {
-			char dat[3] = { 0 };
-			os_memcpy(dat, &DATA[2], SIZE);
-			os_printf("%s\r\n", dat);
-			int i = atoi(dat);
-			os_printf("%d\r\n", i);
-			pwm_set_duty(i, 1);
-			pwm_start();
-		} else if(strstr(DATA, "G:") != 0) {
-			char dat[3] = { 0 };
-			os_memcpy(dat, &DATA[2], SIZE);
-			os_printf("%s\r\n", dat);
-			int i = atoi(dat);
-			os_printf("%d\r\n", i);
-			pwm_set_duty(i, 0);
-			pwm_start();
-		} else if(strstr(DATA, "B:") != 0) {
-			char dat[3] = { 0 };
-			os_memcpy(dat, &DATA[2], SIZE);
-			os_printf("%s\r\n", dat);
-			int i = atoi(dat);
-			os_printf("%d\r\n", i);
-			pwm_set_duty(i, 2);
-			pwm_start();
-		}
 
 		if (SIZE + offset < dataLen) {
 			websocket_parse(&data[SIZE + offset], dataLen - (SIZE + offset), pcb);

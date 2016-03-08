@@ -9,7 +9,6 @@ typedef struct {
 	int dataleft;
 	int filepos;
 	int websocket;
-	int websocket_done;
 	int pos;
 } connections;
 
