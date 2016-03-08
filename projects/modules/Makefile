@@ -7,6 +7,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 TOOLCHAIN_BASE := $(ROOT_DIR)/../../gcc/xtensa-lx106-elf_02/
 
+ROOTSDK=$(ROOT_DIR)/../../sdk/esp_iot_sdk_v1.5.0/include
 include $(PDIR)../settings.mk
 
 ##AR = xtensa-lx106-elf-ar
@@ -25,7 +26,7 @@ ODIR := .output
 OBJODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/obj
 GCC_RAW = $(shell which $(CC))
 
-INCLUDES +=  -I $(shell dirname $(GCC_RAW))/../include -I bsp/xtensa-2/include
+INCLUDES +=  -I $(shell dirname $(GCC_RAW))/../include -I bsp/xtensa-2/include -I$(ROOTSDK)
 
 OBJS := $(CSRCS:%.c=$(OBJODIR)/%.o) \
         $(ASRCs:%.s=$(OBJODIR)/%.o) \
@@ -171,6 +172,6 @@ $(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
 # Required for each makefile to inherit from the parent
 #
 
-INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
+INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include -I $(PDIR)include/$(TARGET)
 #PDIR := ../$(PDIR)
 #sinclude $(PDIR)Makefile
