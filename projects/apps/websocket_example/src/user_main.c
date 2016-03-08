@@ -9,8 +9,8 @@ static ETSTimer tickTimer;
 
 
 void ICACHE_FLASH_ATTR connectToAp() {
-    char * ap = "Ziggo23445";
-    char * pass = "0616539549";
+    char * ap = "12345";
+    char * pass = "12345";
     wifi_set_phy_mode( PHY_MODE_11N );
     struct station_config apconf;
     wifi_station_set_auto_connect(true);
@@ -29,12 +29,10 @@ void tickCb() {
 	uint16 adc = system_adc_read();
 
 	ets_sprintf( buffer, "%d", adc);
-	//os_printf("%s\r\n", buffer);
 	int ret = writeToWebsocket(buffer);
 	if(ret == 0) {
 	os_timer_arm(&tickTimer, 33, 0);
 	} else {
-		//os_printf("EEERRRRRROOOOOORRRRRR \r\n");
 		os_timer_arm(&tickTimer, 100, 0);
 	}
 }

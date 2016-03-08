@@ -39,7 +39,7 @@ enum ws_frame_type{
     WS_CLOSE=0x08,
     WS_INVALID=0xFF
 };
-void ICACHE_FLASH_ATTR ws_write_frame(void *arg){
+void ICACHE_FLASH_ATTR websocket_write(void *arg){
 
     uint8_t byte;
     os_printf("SEND TEXT %s\r\n", arg);
@@ -156,7 +156,7 @@ void ICACHE_FLASH_ATTR ws_parse_framee(char * data,size_t dataLen){
     DATA[SIZE] = 0;
     if(strstr(DATA, "test")) {
     	char * d = " test ";
-    	ws_write_frame(d);
+    	websocket_write(d);
     }
     os_printf("SIZE: %d  tSIZE: %d, DATA: =%s=  \r\n", SIZE, dataLen, DATA);
     if(SIZE + 6 < dataLen) {
