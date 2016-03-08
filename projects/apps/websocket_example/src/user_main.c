@@ -30,9 +30,9 @@ void tickCb() {
 	uint16 adc = system_adc_read();
 
 	ets_sprintf( buffer, "%d", adc);
-	int ret = writeToWebsocket(buffer);
+	int ret = websocket_writedata(buffer);
 	if(ret == 0) {
-	os_timer_arm(&tickTimer, 33, 0);
+		os_timer_arm(&tickTimer, 33, 0);
 	} else {
 		os_timer_arm(&tickTimer, 100, 0);
 	}
@@ -64,8 +64,14 @@ void user_init(void) {
 	GPIO_OUTPUT_SET(GPIO_ID_PIN(12), 0);  // SET
 	GPIO_OUTPUT_SET(GPIO_ID_PIN(15), 0);  // SET
 
+
+	uint8_t PWM_CH[]= {0, 0, 0};   // PIN CONFIG IS IN PWM.h
+	uint16_t freq = 100;
+	pwm_init(freq, PWM_CH);
+	pwm_start();
+
 	connectToAp();
-	my_server_init();
+	server_init();
 	system_init_done_cb(user_done);
 }
 
