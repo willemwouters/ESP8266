@@ -1,0 +1,170 @@
+
+<!DOCTYPE HTML>
+<html>
+   <head>
+	 <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.1.min.js"></script>
+      <script type="text/javascript">
+      var ws = null;
+      var z;
+      var c ;            
+      var graph;
+            var xPadding = 0;
+            var yPadding = 0;
+            
+           
+            
+                       
+      function sendSocket() {
+      	for(x = 0; x < 10; x++) {
+      		ws.send("test");
+      	}
+      }
+         function WebSocketTest()
+         {
+            if ("WebSocket" in window)
+            {
+               //alert("WebSocket is supported by your Browser!");
+               
+               // Let us open a web socket
+               if(ws == null) {
+                ws = new WebSocket("ws://192.168.178.15:8000/echo");
+               }
+				
+               ws.onopen = function()
+               {
+                  // Web Socket is connected, send data using send()
+                  ws.send("Opened connection");
+                  //alert("Message is sent...");
+               };
+				
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  //alert("Message is received..." + received_msg);
+                  //console.log(received_msg);
+                  
+                  addData(received_msg);
+             
+                
+               };
+				
+               ws.onclose = function(event)
+               { 
+        			//alert(event.code);
+        			ws = null;
+        			WebSocketTest();
+               };
+            }
+            
+            else
+            {
+               // The browser doesn't support WebSocket
+               alert("WebSocket NOT supported by your Browser!");
+            }
+         }
+         
+         
+         
+         
+         
+         
+        var totlength = 20;
+        var totheight = 340;
+
+            // Returns the max Y value in our data list
+            function getMaxY() {
+              
+                return totheight;// max;
+            }
+            
+            // Return the x pixel for a graph point
+            function getXPixel(val) {
+                return ((graph.width() - xPadding) / totlength) * val + (xPadding * 1.5);
+            }
+            
+            // Return the y pixel for a graph point
+            function getYPixel(val) {
+                return graph.height() - (((graph.height() - yPadding) / getMaxY()) * val) - yPadding;
+            }
+            
+function sleepFor( sleepDuration ){
+    var now = new Date().getTime();
+    while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
+}
+
+            var datablock = [ 0 ];
+            
+            function addData(dat) {
+                if(datablock.length > 20) {
+                    datablock.shift();
+                }
+                datablock.push(dat);
+                ///refresh();
+            }
+            
+            function refresh() {
+            // Draw the line graph
+                c.clearRect(1, 0, graph.width(),graph.height()-1);
+                c.beginPath();
+                
+                for(var i = 0; i < totlength; i ++) {
+                    c.lineTo(getXPixel(i), getYPixel(datablock[i]));
+                }
+                c.stroke();
+            }
+            
+			var requestID;
+           var fps,fpsInterval,startTime,now,then,elapsed;
+
+            function animate() {
+                requestID = requestAnimationFrame(animate);
+                now = Date.now();
+                elapsed = now - then;
+
+                if (elapsed > fpsInterval) {
+                        then = now - (elapsed % fpsInterval);
+                        refresh();
+                    }
+            }
+            
+            $(document).ready(function() {
+                graph = $('#graph');
+                c = graph[0].getContext('2d');
+                c.lineWidth = 2;
+                c.strokeStyle = '#333';
+                c.font = 'italic 8pt sans-serif';
+                c.textAlign = "center";
+                
+                // Draw the axises
+                c.beginPath();
+                c.moveTo(xPadding, 0);
+                c.lineTo(xPadding, graph.height() - yPadding);
+                c.lineTo(graph.width(), graph.height() - yPadding);
+                c.stroke();
+                animate();
+             
+                // Draw the dots
+                c.fillStyle = '#333';
+                fpsInterval=1000/30;
+                then=Date.now();
+                startTime=then;
+                animate();
+                
+                
+            });
+      </script>
+		
+   </head>
+   <body>
+   
+      <div id="sse">
+         <a href="javascript:WebSocketTest()">Run WebSocket</a>
+         <a href="javascript:sendSocket()">Run SEND</a>
+          <a href="javascript:addData(Math.random() * 100)">Run SEND</a>
+      </div>
+      
+      <canvas id="graph" width="1000" height="650">   
+        </canvas> 
+        
+   </body>
+</html>
