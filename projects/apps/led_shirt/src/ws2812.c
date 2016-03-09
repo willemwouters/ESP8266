@@ -10,7 +10,7 @@
 //I just used a scope to figure out the right time periods.
 
 int fl;
-int MAXPOWER = 20000;
+long MAXPOWER = 50000;
 
 int GammaE[256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 					0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
@@ -133,6 +133,7 @@ void ICACHE_FLASH_ATTR WS2812CopyBuffer( uint8_t * buffer, uint16_t length, int 
 				lTmlBuf[i] = byte;
 			}
 
+			//os_printf("dim %d, maxpower: %d \r\n", dim, totalPower);
 			if(totalPower > MAXPOWER) {
 				WS2812CopyBuffer(buffer, length, flicker, dim-6);
 			}

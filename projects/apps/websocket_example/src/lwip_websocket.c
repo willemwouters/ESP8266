@@ -140,7 +140,7 @@ int ICACHE_FLASH_ATTR websocket_writedata(char * data) {
 	connections * con;
 	connections ** connection_list = getConnectionsBegin();
 	int ret = -1;
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < HTTP_POOL; i++) {
 		if (connection_list[i] != 0) {
 			con = connection_list[i];
 			if (con->websocket == 1) {

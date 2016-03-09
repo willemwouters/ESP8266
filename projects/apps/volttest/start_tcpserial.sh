@@ -1,0 +1,1 @@
+../../../sdk/start_tcpserial.sh

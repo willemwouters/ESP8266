@@ -1,6 +1,7 @@
 #ifndef __CONNECTION_LIST_H
 #define __CONNECTION_LIST_H
 
+#define HTTP_POOL 20
 
 typedef struct {
 	struct tcp_pcb * connection;

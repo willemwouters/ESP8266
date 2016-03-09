@@ -79,12 +79,48 @@ void rainbow_copybuffer(int buffer, int frame) {
 	//set_buffer(buffer, c[0], c[1], c[2]);
 }
 
+void* mBuffers[500] = { 0 };
+extern int bufferrecord;
+extern int bufferframes;
+extern int bufferplay;
+
+void freebuffers() {
+	for(int i = 0; i < 500; i++) {
+		if(mBuffers[i] != 0) {
+			vPortFree(mBuffers[i]);
+			mBuffers[i] = 0;
+		}
+	}
+}
+
 void ICACHE_FLASH_ATTR writestream(int buffer, char * data, int len) {
 	if(len > (COLUMNS * ROWS * COLORS)) {
 		len = COLUMNS * ROWS * COLORS;
 	}
 	LOG_T(LOG_FRAMEDRIVER,  LOG_FRAMEDRIVER_TAG, "Writing stream to framebuffer");
-	ets_memcpy(&framebuffer[(buffer * COLUMNS * ROWS * COLORS)], data, len);
+
+	if(bufferrecord == 1) {
+		if(mBuffers[bufferframes] == 0) {
+			mBuffers[bufferframes] = (void*) pvPortMalloc((size_t) len);
+		}
+		int prevcount = 0;
+		if(bufferframes != 0) {
+			prevcount = bufferframes - 1;
+		} else {
+			ets_memcpy(&framebuffer[(buffer * COLUMNS * ROWS * COLORS)], data, len);
+		}
+		if(ets_memcmp(mBuffers[prevcount], data, len) != 0 || bufferframes == 0) {
+			ets_memcpy(mBuffers[bufferframes], data, len);
+			bufferframes++;
+		}
+		if(system_get_free_heap_size() < 2000) {
+			bufferrecord = 0;
+			bufferplay = 1;
+		}
+
+	} else {
+		ets_memcpy(&framebuffer[(buffer * COLUMNS * ROWS * COLORS)], data, len);
+	}
 
 }
 
@@ -156,6 +192,13 @@ void ICACHE_FLASH_ATTR write_texttowall(int buffer, int textbuffer, long offset,
 
 void setled(char* data, int len ,int dim) {
 	WS2812OutBuffer(data, len, dim);
+}
+char * ICACHE_FLASH_ATTR get_buffersaved(int buffer) {
+	//os_printf("Returning buffer: %d - %d", buffer, bufferframes);
+	if(buffer >= bufferframes)
+		buffer = 0;
+
+	return mBuffers[buffer];
 }
 
 char * ICACHE_FLASH_ATTR get_startbuffer(int buffer) {

@@ -42,7 +42,7 @@ static err_t server_accept(void *arg, struct tcp_pcb *pcb, err_t err) {
 	tcp_recv(pcb, server_recv);
 	tcp_err(pcb, server_err);
 	tcp_sent(pcb, server_sent);
-	tcp_poll(pcb, server_poll, 8); //every two seconds of inactivity of the TCP connection
+	tcp_poll(pcb, server_poll, 2); //every two seconds of inactivity of the TCP connection
 	tcp_accepted(pcb);
 	os_printf("\nserver_accept(): Accepting incoming connection on server...\n");
 	return ERR_OK;
@@ -165,7 +165,7 @@ static err_t server_poll(void *arg, struct tcp_pcb *pcb) {
 	LWIP_UNUSED_ARG(pcb);
 	connections * con;
 	connections ** connection_list = getConnectionsBegin();
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < HTTP_POOL; i++) {
 		if (connection_list[i] != 0) {
 			con = connection_list[i];
 			con->timeout++;

@@ -20,7 +20,7 @@
 #include "espconn.h"
 #include "debug.h"
 #include "GDBStub.h"
-
+#include "httpclient.h"
 #include "log.h"
 #include "ws2812_i2s.h"
 
@@ -29,9 +29,10 @@
 
 static struct udp_pcb * pUdpConnection = NULL;
 static ETSTimer framerefreshTimer;
+static ETSTimer timeTimer;
 
 
-int brightness = 20;
+int brightness = 5;
 int fontbackR = 0;
 int fontbackG = 0;
 int fontbackB = 0;
@@ -43,13 +44,18 @@ int MODEFLASH = NORMAL;
 int MODEFLASHPULSE = NORMAL;
 int scroll = 1;
 
+int timedisplay = 0;
 int activebuffer = 0;
 int initCommand = 0;
 int flashspeed = 2;
-int flashspeedtext = 2;
+int flashspeedtext = 5;
 int flashspeedicons = 2;
 float flashspeedfade = 2;
 int multicastlock = 0;
+int bufferrecord = 0;
+int bufferplay = 0;
+int bufferplayspeed = 40;
+int bufferframes = 0;
 int textspeed = 1;
 
 int32 chip_id = 0;
@@ -136,9 +142,11 @@ void ICACHE_FLASH_ATTR wifi_event_cb(System_Event_t *evt) {
 
 	if(evt->event == EVENT_STAMODE_DISCONNECTED) {
 			LOG_W(LOG_USER,  LOG_USER_TAG, "Disconnected from AP %d", disconnectcount);
+			LOG_W(LOG_USER,  LOG_USER_TAG, "Connect status: %d", wifi_station_get_connect_status());
+
 			initCommand = 0;
 			disconnectcount++;
-			if(disconnectcount > 1620) {
+			if(disconnectcount > 4860) { // timeout = 3 hours
 				connectToAp("", "");
 				if(pUdpConnection!= NULL) {
 					udp_disconnect(pUdpConnection);
@@ -234,6 +242,132 @@ void ICACHE_FLASH_ATTR connectToAp(char * ap, char * pass) {
 	system_restart();
 }
 
+int framebuffercount = 0;
+int framebuffertmp = 0;
+
+void settimebuf(char * b);
+void http_callback2(char * response, int http_status, char * full_response)
+{
+	  os_printf("-%s- \r\n",  response);
+	  char * f = os_strchr(response, '=');
+	  char time[6] = { 0 };
+	  if(f != 0) {
+	  os_memcpy(time, &f[1], 5);
+	  os_printf("TIME= %s  \r\n",  time);
+	   if(timedisplay == 1) {
+		   settimebuf(time);
+	   }
+	  }
+
+}
+char zero[4] = { 31,  17, 31, 0 };
+char one[4] = {   18, 31, 16, 0 };
+char two[4] = {   29, 21, 23, 0 };
+char three[4] = { 21,  21, 31,  0 };
+char four[4] = { 7,  4, 31,  0 };
+char five[4] = { 23,  21, 29,  0 };
+
+char six[4] = { 31,  21, 29,  0 };
+char seven[4] = { 1,  1, 31,  0 };
+char eight[4] = { 31,  21, 31,  0 };
+char nine[4] = { 23,  21, 31,  0 };
+
+
+char tbuf[8*15*3] = { 0 };
+void settimebuf(char * b) {
+	int offset = 0;
+	set_buffer(1, 0x00, 0x00,0x00);
+	os_printf("TIME=%s=\r\n", b);
+	for(int p = 0 ; p < 6; p++) {
+		char * t;
+		if(b[p] != ':' && b[p] != '=' && b[p] != 0) {
+			switch (b[p]) {
+				case '0':
+					os_printf("zero\r\n");
+					t = zero;
+					break;
+				case '1':
+					os_printf("one\r\n");
+					t= one;
+					break;
+				case '2':
+					os_printf("two\r\n");
+					t=two;
+					break;
+				case '3':
+					os_printf("three\r\n");
+					t = three;
+					break;
+				case '4':
+					os_printf("four\r\n");
+					t = four;
+					break;
+				case '5':
+					os_printf("five\r\n");
+					t = five;
+					break;
+				case '6':
+					os_printf("six\r\n");
+
+					t = six;
+					break;
+				case '7':
+					os_printf("seven\r\n");
+
+					t=seven;
+					break;
+				case '8':
+					os_printf("eight\r\n");
+					t=eight;
+					break;
+				case '9':
+					os_printf("nine\r\n");
+
+					t=nine;
+					break;
+				default:
+					t=0;
+					os_printf("ERROR  got %d \r\n" , b[p]);
+					break;
+		}
+		if(t!=0) {
+			int tmpoff = 0;
+			for(int r = 0;r<3;r++) {
+				if(t[r] != 0 || r == 0) {
+					for(int i = 0; i < 8; i++) {
+						if(t[r] & (1 << 7-i)) {
+							setpixel(1, tmpoff + offset, i, fontR, fontG, fontB);
+							os_printf(" r: %d-%d, c: %d, val = 1 \r\n", tmpoff, offset, i);
+						} else {
+							setpixel(1, tmpoff + offset, i, 0x00, 0x00, 0x00);
+							os_printf(" r: %d %d, c: %d, val = 0 \r\n", tmpoff, offset, i);
+						}
+					}
+					tmpoff++;
+				}
+			}
+			offset = offset + tmpoff + 1;
+			}
+		}
+	}
+	for(int x=0; x < 4; x++) {
+		for(int i = 0; i < 8; i++) {
+				setpixel(1, offset + x, i, 0x00, 0x00, 0x00);
+		}
+	}
+	activebuffer=1;
+
+}
+
+void ICACHE_FLASH_ATTR timeCb() {
+
+	os_timer_disarm(&timeTimer);
+
+	http_get("http://footscapesofcrete.com/time.php", "", http_callback2);
+	os_timer_setfn(&timeTimer, timeCb, NULL);
+	os_timer_arm(&timeTimer, 5000, 0);
+}
+
 void ICACHE_FLASH_ATTR refreshFrameCb() {
 	os_timer_disarm(&framerefreshTimer);
 
@@ -291,7 +425,18 @@ void ICACHE_FLASH_ATTR refreshFrameCb() {
 	}
 	framecount++;
 
-	WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, tmpbright);
+	if(bufferplay == 1 && bufferrecord == 0 && bufferframes != 0 && activebuffer != 0) {
+			framebuffertmp = framebuffertmp + 2;
+			if(framebuffertmp >= bufferplayspeed) {
+				framebuffercount++;
+				framebuffertmp = 0;
+			}
+
+
+		WS2812CopyBuffer(get_buffersaved(framebuffercount % (bufferframes)), (COLUMNS * ROWS * COLORS), flicker, tmpbright);
+	} else {
+		WS2812CopyBuffer(get_startbuffer(activebuffer), (COLUMNS * ROWS * COLORS), flicker, tmpbright);
+	}
 	system_soft_wdt_feed();
 
 	ReleaseMutex(&refreshMutext);
@@ -390,6 +535,9 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 				case 0x01:
 					if(precommand != pusrdata[0])
 					LOG_T(LOG_UDP, LOG_UDP_TAG, "Setting stream of data");
+					if(bufferplay == 1)
+						bufferplay = 0;
+
 					writestream(pusrdata[1], &pusrdata[2], length-2);
 					activebuffer = pusrdata[1];
 					break;
@@ -432,7 +580,7 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					LOG_I(LOG_UDP,  LOG_UDP_TAG, "Setting dim level: %d", pusrdata[1]);
 					brightness = pusrdata[1];
 					pulsecount = 0;
-					framecount = 0;
+					framecount = flashspeed / 2;
 					break;
 				case 0x06:
 					if(pusrdata[1] > 19) {
@@ -505,6 +653,43 @@ void ICACHE_FLASH_ATTR udp_receiver(void *arg, struct udp_pcb *pcb, struct pbuf 
 					multicastlock = pusrdata[1];
 					LOG_I(LOG_UDP, LOG_UDP_TAG, "Settings multicast lock to: %d", multicastlock);
 					break;
+				case 0x15:
+					bufferrecord = pusrdata[1];
+					if(bufferrecord == 1) {
+						bufferframes = 0;
+						bufferplay = 0;
+						freebuffers();
+					}
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Settings buffer record to: %d", bufferrecord);
+					break;
+				case 0x16:
+					bufferplay = pusrdata[1];
+					framebuffercount = 0;
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Settings buffer playback to: %d", bufferplay);
+					break;
+				case 0x17:
+					if(pusrdata[1] > 49) {
+						pusrdata[1] = 49;
+					}
+					if(pusrdata[1] < 0) {
+						pusrdata[1] = 0;
+					}
+					bufferplayspeed = 50 - pusrdata[1];
+					LOG_I(LOG_UDP, LOG_UDP_TAG, "Settings buffer speed to: %d", bufferplayspeed);
+					break;
+				case 0x18:
+					if(pusrdata[1] == 1) {
+						timedisplay = 1;
+						os_timer_disarm(&timeTimer);
+						os_timer_setfn(&timeTimer, timeCb, NULL);
+						os_timer_arm(&timeTimer, 500, 0);
+					} else {
+						timedisplay = 0;
+						os_timer_disarm(&timeTimer);
+					}
+
+
+					break;
 				case 0xFC:
 					ssidlen = pusrdata[1];
 					plen = pusrdata[2];
@@ -573,6 +758,9 @@ shell_init(void)
 	if(err != 0) {
 		LOG_E(LOG_UDP, LOG_UDP_TAG,"ERROR  udp_bind");
 	}
+
+
+
 	udp_recv(pUdpConnection, handle_udp_recv, pUdpConnection);
 
 }
@@ -597,6 +785,10 @@ void ICACHE_FLASH_ATTR user_done(void) {
 	shell_init();
 
 
+	//void system_timer_reinit(void);
+	//uint32 system_get_time(void);
+
+
 	os_printf("Stored ssid: -%s- -%d- \r\n", apconf.ssid, os_strlen(apconf.ssid));
 	if(os_strlen(apconf.ssid) == 0) {
 		user_set_softap_config();
@@ -619,11 +811,15 @@ void ICACHE_FLASH_ATTR user_done(void) {
 
 	CreateMutux(&refreshMutext);
 
-	write_textwall_buffer(0, "BIER ", 5); // initial text while no commands
+	write_textwall_buffer(0, "W2  ", 4); // initial text while no commands
 
 	os_timer_disarm(&framerefreshTimer);
 	os_timer_setfn(&framerefreshTimer, refreshFrameCb, NULL);
 	os_timer_arm(&framerefreshTimer, FRAME_REFRESH_SPEED, 0);
+
+	os_timer_disarm(&timeTimer);
+		os_timer_setfn(&timeTimer, timeCb, NULL);
+		os_timer_arm(&timeTimer, 10000, 0);
 
 }
 

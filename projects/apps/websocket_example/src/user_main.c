@@ -11,8 +11,8 @@ static ETSTimer tickTimer;
 
 
 void ICACHE_FLASH_ATTR connectToAp() {
-    char * ap = "123";
-    char * pass = "123";
+    char * ap = "Ziggo23445";
+    char * pass = "0616539549";
     wifi_set_phy_mode( PHY_MODE_11N );
     struct station_config apconf;
     wifi_station_set_auto_connect(true);
